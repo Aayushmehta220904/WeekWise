@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>WeekWise</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root{
+  --bg:linear-gradient(135deg,#1a0f1f,#2a1028);
+  --card:rgba(255,255,255,0.08);
+  --border:rgba(255,255,255,0.15);
+
+  --accent:#ff4da6;
+  --accent-hover:#e60073;
+
+  --study:#22c55e;
+  --essential:#f59e0b;
+  --non:#ef4444;
+
+  --text:#ffe6f2;
+  --muted:#d48fb6;
+}
+
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+  transition:background .3s,color .3s,border .3s;
+}
+
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;
+  background:var(--bg);
+  color:var(--text);
+  padding:60px;
+  min-height:100vh;
+}
+
+/* SPLASH */
+#splash{
+  position:fixed;
+  inset:0;
+  background:linear-gradient(135deg,#140b18,#240d22);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+  animation:fadeOut 1s ease 2.5s forwards;
+}
+
+.splash-content{
+  text-align:center;
+  animation:scaleUp 1.5s ease;
+}
+
+.logo-text{
+  font-size:42px;
+  font-weight:700;
+  color:#ff4da6;
+  letter-spacing:1px;
+  animation:glowPulse 1.5s infinite alternate;
+}
+
+.logo-sub{
+  margin-top:12px;
+  font-size:14px;
+  color:#ffc0df;
+  opacity:0.8;
+}
+
+@keyframes glowPulse{
+  from{ text-shadow:0 0 10px rgba(255,77,166,0.5); }
+  to{ text-shadow:0 0 25px rgba(255,77,166,1); }
+}
+
+@keyframes scaleUp{
+  from{ transform:scale(0.8); opacity:0; }
+  to{ transform:scale(1); opacity:1; }
+}
+
+@keyframes fadeOut{
+  to{ opacity:0; visibility:hidden; }
+}
+
+/* HEADER */
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+h1{font-size:32px;font-weight:600;}
+.subtitle{margin-top:8px;color:var(--muted);font-size:14px;}
+
+/* Tabs */
+.tabs{margin-top:40px;display:flex;gap:14px;}
+.tab-btn{
+  padding:10px 22px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:var(--card);
+  backdrop-filter:blur(16px);
+  cursor:pointer;
+}
+.tab-btn.active{
+  border-color:var(--accent);
+  color:var(--accent);
+  background:rgba(255,77,166,0.1);
+}
+
+/* Layout */
+.wrapper{
+  margin-top:40px;
+  display:grid;
+  grid-template-columns:360px 1fr;
+  gap:40px;
+}
+@media(max-width:1000px){
+  .wrapper{grid-template-columns:1fr}
+}
+
+/* Card */
+.card{
+  background:var(--card);
+  backdrop-filter:blur(20px);
+  border-radius:18px;
+  padding:26px;
+  border:1px solid var(--border);
+  box-shadow:0 15px 40px rgba(0,0,0,0.3);
+}
+
+/* Form */
+label{
+  display:block;
+  margin-top:16px;
+  font-size:13px;
+  color:var(--muted);
+}
+
+input,select{
+  width:100%;
+  margin-top:6px;
+  padding:12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,0.15);
+  backdrop-filter:blur(12px);
+  color:var(--text);
+}
+
+#mainActionBtn{
+  margin-top:20px;
+  padding:13px;
+  border-radius:12px;
+  border:none;
+  background:linear-gradient(135deg,var(--accent),var(--accent-hover));
+  color:white;
+  font-weight:600;
+  cursor:pointer;
+  box-shadow:0 0 20px rgba(255,77,166,0.5);
+}
+
+/* TABLE */
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:10px;
+  table-layout:fixed;
+}
+
+th,td{
+  border:1px solid var(--border);
+  padding:8px;
+  vertical-align:top;
+  background:var(--card);
+  backdrop-filter:blur(16px);
+}
+
+/* FIX TIME COLUMN WIDTH */
+th:first-child,
+td:first-child{
+  width:90px;
+}
+
+th{
+  font-size:12px;
+  color:var(--muted);
+}
+
+.time-cell{
+  font-size:12px;
+  color:var(--muted);
+}
+
+.block{
+  border-radius:10px;
+  padding:10px;
+  margin-bottom:8px;
+  font-size:13px;
+}
+
+.study{
+  background:rgba(34,197,94,0.18);
+  border-left:4px solid var(--study);
+}
+.essential{
+  background:rgba(245,158,11,0.18);
+  border-left:4px solid var(--essential);
+}
+.nonessential{
+  background:rgba(239,68,68,0.18);
+  border-left:4px solid var(--non);
+}
+
+.action-btn{
+  margin-top:8px;
+  padding:5px 10px;
+  border-radius:8px;
+  font-size:11px;
+  border:none;
+  cursor:pointer;
+  margin-right:6px;
+  color:white;
+}
+.action-btn.edit{background:#10b981;}
+.action-btn.delete{background:#dc2626;}
+
+.hidden{display:none}
+</style>
+</head>
+
+<body>
+
+<div id="splash">
+  <div class="splash-content">
+    <div class="logo-text">WeekWise</div>
+    <div class="logo-sub">Focus. Discipline. Growth.</div>
+  </div>
+</div>
+
+<div class="header">
+  <div>
+    <h1>WeekWise</h1>
+    <div class="subtitle">Luxury glass focus planner</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab-btn active" onclick="switchTab('weekdays')">Mon–Fri</div>
+  <div class="tab-btn" onclick="switchTab('weekend')">Sat–Sun</div>
+</div>
+
+<div class="wrapper">
+
+<div class="card">
+  <h3>Add / Edit Slot</h3>
+
+  <label>Type</label>
+  <select id="type">
+    <option value="study">Study</option>
+    <option value="essential">Essential</option>
+    <option value="nonessential">Non-Essential</option>
+  </select>
+
+  <label>Title</label>
+  <input id="title">
+
+  <label>Day</label>
+  <select id="day"></select>
+
+  <label>Start Time</label>
+  <input type="time" id="start">
+
+  <label>End Time</label>
+  <input type="time" id="end">
+
+  <button id="mainActionBtn" onclick="saveSlot()">Add Slot</button>
+</div>
+
+<div class="card">
+  <div id="weekdaysPage">
+    <table id="weekdaysTable"></table>
+  </div>
+  <div id="weekendPage" class="hidden">
+    <table id="weekendTable"></table>
+  </div>
+</div>
+
+</div>
+
+<script>
+window.addEventListener("load",()=>{
+  setTimeout(()=>{
+    document.getElementById("splash").style.display="none";
+  },3000);
+});
+
+const WEEKDAYS=["Monday","Tuesday","Wednesday","Thursday","Friday"];
+const WEEKEND=["Saturday","Sunday"];
+let slots=JSON.parse(localStorage.getItem("STUDY_SLOTS")||"[]");
+let editingId=null;
+
+const daySelect=document.getElementById("day");
+[...WEEKDAYS,...WEEKEND].forEach(d=>daySelect.add(new Option(d,d)));
+
+function switchTab(tab){
+  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+  if(tab==="weekdays"){
+    document.querySelectorAll(".tab-btn")[0].classList.add("active");
+    weekdaysPage.classList.remove("hidden");
+    weekendPage.classList.add("hidden");
+  }else{
+    document.querySelectorAll(".tab-btn")[1].classList.add("active");
+    weekendPage.classList.remove("hidden");
+    weekdaysPage.classList.add("hidden");
+  }
+}
+
+function toMinutes(t){const [h,m]=t.split(":").map(Number);return h*60+m;}
+function pad2(n){return String(n).padStart(2,'0');}
+function overlapsHour(slot,h){
+  const sh=toMinutes(slot.start);
+  const eh=toMinutes(slot.end);
+  return sh<(h+1)*60&&eh>h*60;
+}
+
+function saveSlot(){
+  if(!start.value||!end.value)return;
+  const sm=toMinutes(start.value);
+  const em=toMinutes(end.value);
+  if(em<=sm)return;
+
+  const slotData={
+    id:editingId||Date.now(),
+    type:type.value,
+    title:title.value||type.value,
+    day:day.value,start:start.value,end:end.value
+  };
+
+  if(editingId){
+    slots=slots.map(s=>s.id===editingId?slotData:s);
+  }else{
+    slots.push(slotData);
+  }
+
+  localStorage.setItem("STUDY_SLOTS",JSON.stringify(slots));
+  render();
+  editingId=null;
+  title.value=start.value=end.value="";
+  mainActionBtn.textContent="Add Slot";
+}
+
+function editSlot(id){
+  const s=slots.find(x=>x.id===id);
+  editingId=id;
+  type.value=s.type;
+  title.value=s.title;
+  day.value=s.day;
+  start.value=s.start;
+  end.value=s.end;
+  mainActionBtn.textContent="Update Slot";
+}
+
+function deleteSlot(id){
+  slots=slots.filter(s=>s.id!==id);
+  localStorage.setItem("STUDY_SLOTS",JSON.stringify(slots));
+  render();
+}
+
+function render(){
+  renderTable(WEEKDAYS,20,24,"weekdaysTable");
+  renderTable(WEEKEND,8,24,"weekendTable");
+}
+
+function renderTable(days,startHour,endHour,tableId){
+  let html="<tr><th>Time</th>";
+  days.forEach(d=>html+=`<th>${d}</th>`);
+  html+="</tr>";
+
+  for(let h=startHour;h<endHour;h++){
+    html+=`<tr><td class="time-cell">${pad2(h)}:00</td>`;
+    days.forEach(d=>{
+      const cellSlots=slots.filter(s=>s.day===d&&overlapsHour(s,h));
+      html+="<td>";
+      cellSlots.forEach(s=>{
+        html+=`
+          <div class="block ${s.type}">
+            <strong>${s.title}</strong><br>
+            ${s.start} - ${s.end}<br>
+            <button class="action-btn edit" onclick="editSlot(${s.id})">Edit</button>
+            <button class="action-btn delete" onclick="deleteSlot(${s.id})">Delete</button>
+          </div>
+        `;
+      });
+      html+="</td>";
+    });
+    html+="</tr>";
+  }
+
+  document.getElementById(tableId).innerHTML=html;
+}
+
+render();
+</script>
+
+</body>
+</html>
