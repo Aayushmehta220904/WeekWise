@@ -1,430 +1,1163 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>WeekWise</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
+/* =========================================================
+   WEEKWISE — FULL FEATURE SINGLE-FILE (VINTAGE NOTEBOOK)
+   - Mon–Fri: 20:00–24:00
+   - Sat–Sun: 08:00–24:00
+   - LocalStorage key preserved: "STUDY_SLOTS"
+   ========================================================= */
+
+/* ---------- Theme Tokens ---------- */
 :root{
-  --paper:#fdfbf7;
-  --ink:#1f2937;
-  --muted:#6b7280;
-  --line:#e0ecff;
-  --margin-line:#ef4444;
+  /* Paper */
+  --paper:#f6f1e8;
+  --paper2:#f2eadc;
+  --paperEdge:#e7dcc9;
 
-  --accent:#2563eb;
+  /* Ink */
+  --ink:#2a2a2a;
+  --muted:#7a746b;
 
-  --study:#16a34a;
-  --essential:#d97706;
-  --non:#dc2626;
+  /* Ruled lines + margin */
+  --rule:#d8d2c7;
+  --margin:#c96a6a;
+
+  /* UI chrome */
+  --card:#fbf8f2;
+  --card2:#f7f1e6;
+  --border:#d4cec3;
+  --shadow: 0 25px 60px rgba(0,0,0,0.12);
+
+  /* Accent */
+  --accent:#3b5b8a;
+  --accent2:#2e4a73;
+
+  /* Types */
+  --study:#2f855a;
+  --essential:#b7791f;
+  --non:#b83232;
+
+  /* Highlights */
+  --todayCol: rgba(59,91,138,0.06);
+  --currentRow: rgba(59,91,138,0.085);
+
+  /* Layout */
+  --pageMax: 1180px;
+  --spiralLeft: 64px;     /* spiral x */
+  --marginLeft: 160px;    /* red line x */
+  --contentPadLeft: 190px;/* content safe start */
 }
 
-*{
-  box-sizing:border-box;
-  margin:0;
-  padding:0;
-}
+/* ---------- Reset ---------- */
+*{ box-sizing:border-box; margin:0; padding:0; }
+html,body{ height:100%; }
+button, input, select{ font: inherit; }
+button{ -webkit-tap-highlight-color: transparent; }
 
+/* ---------- Body Paper Texture ---------- */
 body{
   font-family: "Georgia", serif;
-  background: var(--paper);
   color: var(--ink);
-  padding:60px 60px 60px 160px;
   min-height:100vh;
-  position:relative;
-  overflow-x:hidden;
+  display:flex;
+  justify-content:center;
+
+  /* Realistic paper grain using layered gradients */
+  background:
+    radial-gradient(circle at 20% 30%, rgba(0,0,0,0.035), transparent 55%),
+    radial-gradient(circle at 80% 70%, rgba(0,0,0,0.025), transparent 55%),
+    radial-gradient(circle at 50% 110%, rgba(0,0,0,0.025), transparent 60%),
+    repeating-linear-gradient(
+      45deg,
+      rgba(0,0,0,0.016),
+      rgba(0,0,0,0.016) 1px,
+      transparent 1px,
+      transparent 4px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(255,255,255,0.02),
+      rgba(255,255,255,0.02) 1px,
+      transparent 1px,
+      transparent 5px
+    ),
+    linear-gradient(180deg, var(--paper), var(--paper2));
 }
 
-/* 📄 Paper lines */
-body::before{
+/* =========================================================
+   Splash (Startup)
+   ========================================================= */
+#splash{
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(0,0,0,0.05), transparent 55%),
+    radial-gradient(circle at 70% 80%, rgba(0,0,0,0.04), transparent 60%),
+    linear-gradient(180deg, var(--paper), var(--paper2));
+  overflow:hidden;
+}
+
+.splash-sheet{
+  width:min(560px, 86vw);
+  border:1px solid var(--border);
+  background: rgba(255,255,255,0.55);
+  border-radius: 14px;
+  box-shadow: 0 30px 70px rgba(0,0,0,0.16);
+  padding: 36px 30px;
+  position:relative;
+  transform: translateY(10px);
+  opacity:0;
+  animation: splashReveal 900ms ease forwards;
+}
+
+@keyframes splashReveal{
+  to{ transform: translateY(0); opacity:1; }
+}
+
+/* soft edge aging */
+.splash-sheet::before{
   content:"";
-  position:fixed;
+  position:absolute;
   inset:0;
+  border-radius:14px;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 10% 10%, rgba(0,0,0,0.06), transparent 35%),
+    radial-gradient(circle at 90% 15%, rgba(0,0,0,0.04), transparent 40%),
+    radial-gradient(circle at 50% 120%, rgba(0,0,0,0.05), transparent 45%);
+  mix-blend-mode:multiply;
+  opacity:.55;
+}
+
+.splash-title{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+}
+
+.splash-logo{
+  font-size: 46px;
+  font-weight: 800;
+  letter-spacing: .7px;
+  color: var(--accent2);
+  position:relative;
+}
+
+/* ink stroke writing animation */
+.splash-logo::after{
+  content:"";
+  position:absolute;
+  left: 6%;
+  right: 6%;
+  bottom: -8px;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, rgba(46,74,115,0.7), transparent);
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: inkStroke 1100ms ease 250ms forwards;
+  border-radius:999px;
+}
+
+@keyframes inkStroke{ to{ transform: scaleX(1);} }
+
+.splash-sub{
+  font-style: italic;
+  color: var(--muted);
+  opacity: .92;
+}
+
+/* fade out whole splash */
+.splash-hide{
+  animation: splashFade 700ms ease forwards;
+}
+@keyframes splashFade{
+  to{ opacity:0; visibility:hidden; }
+}
+
+/* =========================================================
+   Notebook Container
+   ========================================================= */
+.notebook{
+  width: 100%;
+  max-width: var(--pageMax);
+  position: relative;
+  padding: 54px 34px 80px var(--contentPadLeft);
+  margin: 22px 16px;
+
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.26), rgba(255,255,255,0.12)),
+    linear-gradient(180deg, var(--paper), var(--paper2));
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  overflow:hidden;
+}
+
+/* page edge */
+.notebook::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  border-radius:18px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
+}
+
+/* Ruled lines overlay (behind content) */
+.notebook::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
   background:
     repeating-linear-gradient(
       to bottom,
       transparent 0px,
-      transparent 27px,
-      var(--line) 28px
+      transparent 26px,
+      rgba(216,210,199,0.95) 27px
     );
-  pointer-events:none;
-  z-index:0;
-  opacity:.6;
+  opacity: .9;
+  z-index: 0;
 }
 
-/* 🔴 Margin line */
-body::after{
-  content:"";
-  position:fixed;
+/* Margin line */
+.margin-line{
+  position:absolute;
   top:0;
   bottom:0;
-  left:120px;
+  left: var(--marginLeft);
   width:2px;
-  background:var(--margin-line);
+  background: var(--margin);
+  opacity: .85;
+  z-index: 1;
   pointer-events:none;
-  z-index:0;
 }
 
-body > *{
-  position:relative;
-  z-index:2;
-}
-
-/* 📎 Spiral binding */
+/* Spiral Binding (aligned + punched look) */
 .spiral{
-  position:fixed;
-  top:0;
-  bottom:0;
-  left:60px;
-  width:30px;
-  background:
-    radial-gradient(circle at center, #bbb 4px, transparent 5px) center 20px/20px 40px repeat-y;
-  z-index:1;
-}
-
-/* ================= SPLASH ================= */
-#splash{
-  position:fixed;
-  inset:0;
-  background:linear-gradient(135deg,#111827,#1f2937);
+  position:absolute;
+  top: 70px;
+  left: var(--spiralLeft);
+  width: 70px;
   display:flex;
+  flex-direction:column;
   align-items:center;
-  justify-content:center;
-  z-index:9999;
-  animation:fadeOut 1s ease 2.5s forwards;
+  gap: 38px;
+  z-index: 2;
+  pointer-events:none;
 }
 
-.splash-content{
-  text-align:center;
-  animation:scaleUp 1.2s ease;
+.ring{
+  width:26px; height:26px;
+  border-radius:50%;
+  border:5px solid #8e8e8e;
+  background: transparent;
+  box-shadow:
+    inset 0 2px 4px rgba(255,255,255,0.55),
+    inset 0 -2px 6px rgba(0,0,0,0.28),
+    0 3px 8px rgba(0,0,0,0.22);
+  position:relative;
 }
 
-.logo-text{
-  font-size:52px;
-  font-weight:700;
-  color:white;
+/* punch hole (paper center) */
+.ring::after{
+  content:"";
+  position:absolute;
+  top:50%; left:50%;
+  transform: translate(-50%,-50%);
+  width:12px; height:12px;
+  border-radius:50%;
+  background: linear-gradient(180deg, var(--paper), var(--paper2));
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.22);
 }
 
-.logo-sub{
-  margin-top:12px;
-  font-size:16px;
-  color:#cbd5e1;
-  letter-spacing:1px;
-  opacity:.85;
+/* subtle inner page shadow near spiral */
+.spiral-shadow{
+  position:absolute;
+  top:0; bottom:0;
+  left: calc(var(--marginLeft) - 42px);
+  width: 28px;
+  background: linear-gradient(90deg, rgba(0,0,0,0.07), transparent);
+  z-index: 1;
+  pointer-events:none;
+  opacity:.55;
 }
 
-@keyframes scaleUp{
-  from{transform:scale(0.7);opacity:0;}
-  to{transform:scale(1);opacity:1;}
-}
-
-@keyframes fadeOut{
-  to{opacity:0;visibility:hidden;}
-}
-
-/* ================= HEADER ================= */
+/* =========================================================
+   Header
+   ========================================================= */
 .header{
   text-align:center;
+  position:relative;
+  z-index: 3;
+  margin-bottom: 14px;
 }
 
 h1{
-  font-size:42px;
-  font-weight:700;
+  font-size: 42px;
+  font-weight: 800;
+  letter-spacing: .4px;
 }
 
 .subtitle{
   margin-top:8px;
-  color:var(--muted);
+  color: var(--muted);
+  font-size: 15px;
+  font-style: italic;
 }
 
-/* Tabs */
+/* =========================================================
+   Tabs + Micro Animations
+   ========================================================= */
 .tabs{
-  margin-top:40px;
+  margin-top: 22px;
   display:flex;
   justify-content:center;
-  gap:20px;
+  gap: 12px;
+  flex-wrap:wrap;
+  position:relative;
+  z-index: 3;
 }
 
 .tab-btn{
-  padding:8px 22px;
-  border:1px solid #d1d5db;
-  background:white;
+  border: 1px solid var(--border);
+  background: rgba(251,248,242,0.86);
+  padding: 9px 18px;
+  border-radius: 10px;
   cursor:pointer;
-  font-family:inherit;
-  transition:.2s;
+  color: var(--ink);
+  transition: transform .12s ease, background .2s ease, color .2s ease, border-color .2s ease, box-shadow .2s ease;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.06);
 }
-
+.tab-btn:hover{ transform: translateY(-1px); }
+.tab-btn:active{ transform: translateY(0); }
 .tab-btn.active{
-  background:var(--accent);
-  color:white;
-  border-color:var(--accent);
+  background: linear-gradient(180deg, rgba(59,91,138,0.16), rgba(59,91,138,0.08));
+  border-color: rgba(59,91,138,0.35);
+  color: var(--accent2);
 }
 
-/* Layout */
+/* =========================================================
+   Layout
+   ========================================================= */
 .wrapper{
-  margin-top:40px;
+  margin-top: 34px;
   display:grid;
-  grid-template-columns:360px 1fr;
-  gap:40px;
+  grid-template-columns: 360px 1fr;
+  gap: 28px;
+  position:relative;
+  z-index: 3;
 }
 
-@media(max-width:1000px){
-  .wrapper{grid-template-columns:1fr}
+@media(max-width: 980px){
+  .notebook{ padding-left: 32px; }
+  .margin-line, .spiral, .spiral-shadow{ display:none; }
+  .wrapper{ grid-template-columns:1fr; }
 }
 
+/* =========================================================
+   Cards (raised above ruled lines)
+   ========================================================= */
 .card{
-  background:white;
-  border:1px solid #e5e7eb;
-  padding:26px;
+  background: rgba(251,248,242,0.92);
+  border: 1px solid rgba(212,206,195,0.9);
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow:
+    0 14px 30px rgba(0,0,0,0.08),
+    inset 0 0 0 1px rgba(255,255,255,0.3);
+  position:relative;
 }
 
-/* Form */
+/* Keep cards from visually “sitting under” ruled lines */
+.card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:14px;
+  pointer-events:none;
+  background: linear-gradient(180deg, rgba(255,255,255,0.18), transparent);
+  opacity:.85;
+}
+
+/* headings */
+.card h3{
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: .2px;
+  margin-bottom: 10px;
+}
+
+/* =========================================================
+   Form
+   ========================================================= */
 label{
   display:block;
-  margin-top:16px;
-  font-size:13px;
-  color:var(--muted);
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--muted);
 }
 
-input,select{
+input, select{
   width:100%;
-  margin-top:6px;
-  padding:8px;
-  border:1px solid #d1d5db;
-  font-family:inherit;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(212,206,195,0.95);
+  background: rgba(255,255,255,0.75);
+  outline:none;
+  transition: box-shadow .15s ease, border-color .15s ease, transform .12s ease;
 }
 
-#mainActionBtn{
-  margin-top:20px;
-  padding:10px;
-  background:var(--accent);
-  color:white;
-  border:none;
-  cursor:pointer;
+input:focus, select:focus{
+  border-color: rgba(59,91,138,0.45);
+  box-shadow: 0 0 0 4px rgba(59,91,138,0.12);
 }
 
-/* Pages */
-.hidden{
+.field-error{
+  border-color: rgba(184,50,50,0.55) !important;
+  box-shadow: 0 0 0 4px rgba(184,50,50,0.12) !important;
+}
+
+.message{
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
   display:none;
+  border: 1px solid transparent;
+  background: rgba(255,255,255,0.6);
+}
+.message.ok{
+  display:block;
+  border-color: rgba(47,133,90,0.35);
+  background: rgba(47,133,90,0.08);
+}
+.message.error{
+  display:block;
+  border-color: rgba(184,50,50,0.35);
+  background: rgba(184,50,50,0.08);
 }
 
-/* Table */
-table{
+/* buttons row */
+.primary-btn{
+  margin-top: 14px;
   width:100%;
-  border-collapse:collapse;
-  table-layout:fixed;
-  background:white;
-}
-
-th,td{
-  border:1px solid #e5e7eb;
-  padding:8px;
-  vertical-align:top;
-}
-
-th:first-child,
-td:first-child{
-  width:90px;
-}
-
-.block{
-  background:#f9fafb;
-  padding:6px;
-  margin-bottom:6px;
-  border-left:4px solid;
-}
-
-.study{border-color:var(--study);}
-.essential{border-color:var(--essential);}
-.nonessential{border-color:var(--non);}
-
-.action-btn{
-  margin-top:5px;
-  padding:4px 6px;
-  font-size:11px;
+  padding: 11px 12px;
+  border-radius: 12px;
   border:none;
-  color:white;
   cursor:pointer;
+  font-weight: 800;
+  color: white;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  box-shadow: 0 14px 26px rgba(59,91,138,0.22);
+  transition: transform .12s ease, filter .15s ease;
 }
-.edit{background:#16a34a;}
-.delete{background:#dc2626;}
+.primary-btn:hover{ filter: brightness(1.05); }
+.primary-btn:active{ transform: scale(0.99); }
+
+.secondary-row{
+  margin-top: 10px;
+  display:flex;
+  gap:10px;
+}
+.ghost-btn{
+  flex:1;
+  padding: 10px 10px;
+  border-radius: 12px;
+  cursor:pointer;
+  border: 1px solid rgba(212,206,195,0.95);
+  background: rgba(255,255,255,0.55);
+  transition: transform .12s ease, background .2s ease;
+}
+.ghost-btn:hover{ background: rgba(255,255,255,0.7); }
+.ghost-btn:active{ transform: scale(0.99); }
+
+/* legends */
+.legend{
+  margin-top: 14px;
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  font-size: 12px;
+  color: var(--muted);
+}
+.pill{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(212,206,195,0.95);
+  background: rgba(255,255,255,0.55);
+}
+.dot{ width:10px; height:10px; border-radius:50%; }
+.dot.study{ background: var(--study); }
+.dot.essential{ background: var(--essential); }
+.dot.non{ background: var(--non); }
+
+/* stats */
+.stats{
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(212,206,195,0.95);
+  background: rgba(255,255,255,0.55);
+  font-size: 13px;
+  color: var(--ink);
+  line-height: 1.55;
+}
+
+/* =========================================================
+   Table
+   ========================================================= */
+.table-wrap{
+  overflow:auto;
+  border-radius: 12px;
+}
+
+/* keep columns consistent across both tables */
+table{
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  min-width: 720px;
+  background: rgba(251,248,242,0.72);
+  border-radius: 12px;
+}
+
+th, td{
+  border: 1px solid rgba(212,206,195,0.95);
+  padding: 10px;
+  vertical-align: top;
+  background: rgba(255,255,255,0.50);
+}
+
+th{
+  font-size: 12px;
+  color: var(--muted);
+  background: rgba(243,238,229,0.85);
+}
+
+.time-cell{
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+tr.current-hour td{
+  background: var(--currentRow);
+}
+
+td.today-column, th.today-column{
+  background: var(--todayCol);
+}
+
+/* =========================================================
+   Blocks
+   ========================================================= */
+.block{
+  border-radius: 12px;
+  padding: 10px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  background: rgba(245,241,234,0.92);
+  box-shadow: 0 10px 18px rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.04);
+}
+
+.block.study{ border-left: 5px solid var(--study); }
+.block.essential{ border-left: 5px solid var(--essential); }
+.block.nonessential{ border-left: 5px solid var(--non); }
+
+.block-title{
+  font-weight: 800;
+  display:block;
+  margin-bottom: 4px;
+}
+.block-time{
+  font-size: 12px;
+  color: rgba(42,42,42,0.75);
+}
+
+/* actions */
+.block-actions{
+  margin-top: 10px;
+  display:flex;
+  gap:8px;
+}
+.action-btn{
+  padding: 7px 10px;
+  border-radius: 10px;
+  border:none;
+  cursor:pointer;
+  font-size: 11px;
+  font-weight: 800;
+  color: white;
+  transition: transform .12s ease, filter .15s ease;
+}
+.action-btn:active{ transform: scale(0.99); }
+.action-btn.edit{
+  background: linear-gradient(135deg, #2f855a, #1f6f49);
+}
+.action-btn.delete{
+  background: linear-gradient(135deg, #b83232, #8f2424);
+}
+
+/* pages */
+.page{ display:block; }
+.hidden{ display:none; }
+
+/* small entrance anim */
+@keyframes popIn{
+  from{ transform: translateY(8px); opacity:0; }
+  to{ transform: translateY(0); opacity:1; }
+}
+.pop{ animation: popIn 220ms ease; }
 </style>
 </head>
 
 <body>
 
-<div class="spiral"></div>
-
-<!-- SPLASH -->
-<div id="splash">
-  <div class="splash-content">
-    <div class="logo-text">WeekWise</div>
-    <div class="logo-sub">Focus. Discipline. Growth.</div>
+<!-- Splash -->
+<div id="splash" aria-hidden="true">
+  <div class="splash-sheet">
+    <div class="splash-title">
+      <div class="splash-logo">WeekWise</div>
+      <div class="splash-sub">Your digital notebook planner</div>
+    </div>
   </div>
 </div>
 
-<div class="header">
-  <h1>WeekWise</h1>
-  <div class="subtitle">Your digital notebook planner</div>
-</div>
+<!-- Notebook -->
+<div class="notebook">
 
-<div class="tabs">
-  <div class="tab-btn active" onclick="switchTab('weekdays')">Mon–Fri</div>
-  <div class="tab-btn" onclick="switchTab('weekend')">Sat–Sun</div>
-</div>
-
-<div class="wrapper">
-
-<div class="card">
-  <h3>Add / Edit Slot</h3>
-
-  <label>Type</label>
-  <select id="type">
-    <option value="study">Study</option>
-    <option value="essential">Essential</option>
-    <option value="nonessential">Non-Essential</option>
-  </select>
-
-  <label>Title</label>
-  <input id="title">
-
-  <label>Day</label>
-  <select id="day"></select>
-
-  <label>Start Time</label>
-  <input type="time" id="start">
-
-  <label>End Time</label>
-  <input type="time" id="end">
-
-  <button id="mainActionBtn" onclick="saveSlot()">Add Slot</button>
-</div>
-
-<div class="card">
-  <div id="weekdaysPage">
-    <table id="weekdaysTable"></table>
+  <!-- Spiral + margin (desktop) -->
+  <div class="spiral-shadow"></div>
+  <div class="spiral" aria-hidden="true">
+    <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+    <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+    <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+    <div class="ring"></div><div class="ring"></div><div class="ring"></div>
   </div>
-  <div id="weekendPage" class="hidden">
-    <table id="weekendTable"></table>
-  </div>
-</div>
+  <div class="margin-line" aria-hidden="true"></div>
 
+  <!-- Header -->
+  <div class="header">
+    <h1>WeekWise</h1>
+    <div class="subtitle">Your digital notebook planner</div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" id="tabWeekdays" type="button">Mon–Fri</button>
+    <button class="tab-btn" id="tabWeekend" type="button">Sat–Sun</button>
+  </div>
+
+  <div class="wrapper">
+
+    <!-- Left Card -->
+    <div class="card">
+      <h3>Add / Edit Slot</h3>
+
+      <label>Type</label>
+      <select id="type">
+        <option value="study">Study</option>
+        <option value="essential">Essential</option>
+        <option value="nonessential">Non-Essential</option>
+      </select>
+
+      <label>Title</label>
+      <input id="title" placeholder="DSA / Python / Break"/>
+
+      <label>Day</label>
+      <select id="day"></select>
+
+      <label>Start Time</label>
+      <input type="time" id="start"/>
+
+      <label>End Time</label>
+      <input type="time" id="end"/>
+
+      <div id="msgBox" class="message" role="status" aria-live="polite"></div>
+
+      <button id="mainActionBtn" class="primary-btn" type="button">Add Slot</button>
+
+      <div class="secondary-row">
+        <button id="clearFormBtn" class="ghost-btn" type="button">Clear</button>
+        <button id="clearAllBtn" class="ghost-btn" type="button">Clear All</button>
+      </div>
+
+      <div class="legend">
+        <span class="pill"><span class="dot study"></span> Study</span>
+        <span class="pill"><span class="dot essential"></span> Essential</span>
+        <span class="pill"><span class="dot non"></span> Non-Essential</span>
+      </div>
+
+      <div class="stats" id="statsBox">—</div>
+    </div>
+
+    <!-- Right Card -->
+    <div class="card">
+      <div id="weekdaysPage" class="page">
+        <div class="table-wrap">
+          <table id="weekdaysTable"></table>
+        </div>
+      </div>
+
+      <div id="weekendPage" class="page hidden">
+        <div class="table-wrap">
+          <table id="weekendTable"></table>
+        </div>
+      </div>
+    </div>
+
+  </div>
 </div>
 
 <script>
-window.addEventListener("load",()=>{
-  setTimeout(()=>{
-    document.getElementById("splash").style.display="none";
-  },3000);
+/* =========================================================
+   JS — Stable + Full Features
+   ========================================================= */
+
+/* Storage key preserved to avoid data loss */
+const STORAGE_KEY = "STUDY_SLOTS";
+
+/* Day sets */
+const WEEKDAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday"];
+const WEEKEND  = ["Saturday","Sunday"];
+
+/* Allowed windows (minutes) */
+const WEEKDAY_WINDOW = { startMin: 20*60, endMin: 24*60 }; // 8 PM - 12 AM
+const WEEKEND_WINDOW = { startMin:  8*60, endMin: 24*60 }; // 8 AM - 12 AM
+
+/* DOM */
+const splash = document.getElementById("splash");
+
+const tabWeekdays = document.getElementById("tabWeekdays");
+const tabWeekend  = document.getElementById("tabWeekend");
+const weekdaysPage = document.getElementById("weekdaysPage");
+const weekendPage  = document.getElementById("weekendPage");
+
+const typeEl  = document.getElementById("type");
+const titleEl = document.getElementById("title");
+const dayEl   = document.getElementById("day");
+const startEl = document.getElementById("start");
+const endEl   = document.getElementById("end");
+
+const msgBox = document.getElementById("msgBox");
+const statsBox = document.getElementById("statsBox");
+
+const mainActionBtn = document.getElementById("mainActionBtn");
+const clearFormBtn  = document.getElementById("clearFormBtn");
+const clearAllBtn   = document.getElementById("clearAllBtn");
+
+const weekdaysTable = document.getElementById("weekdaysTable");
+const weekendTable  = document.getElementById("weekendTable");
+
+/* State */
+let slots = loadSlots();
+let editingId = null;
+let activeTab = "weekdays";
+
+/* =========================================================
+   Splash lifecycle
+   ========================================================= */
+window.addEventListener("load", () => {
+  // keep the ruled lines + notebook loading smooth
+  setTimeout(() => {
+    splash.classList.add("splash-hide");
+    // remove from flow after fade
+    setTimeout(() => { splash.style.display = "none"; }, 800);
+  }, 2600);
 });
 
-const WEEKDAYS=["Monday","Tuesday","Wednesday","Thursday","Friday"];
-const WEEKEND=["Saturday","Sunday"];
-let slots=JSON.parse(localStorage.getItem("STUDY_SLOTS")||"[]");
-let editingId=null;
+/* =========================================================
+   Init days dropdown
+   ========================================================= */
+function initDays(){
+  dayEl.innerHTML = "";
+  [...WEEKDAYS, ...WEEKEND].forEach(d => {
+    const opt = document.createElement("option");
+    opt.value = d;
+    opt.textContent = d;
+    dayEl.appendChild(opt);
+  });
+}
+initDays();
 
-const daySelect=document.getElementById("day");
-[...WEEKDAYS,...WEEKEND].forEach(d=>daySelect.add(new Option(d,d)));
-
-function switchTab(tab){
-  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
-  if(tab==="weekdays"){
-    document.querySelectorAll(".tab-btn")[0].classList.add("active");
+/* =========================================================
+   Tabs
+   ========================================================= */
+function setTab(tab){
+  activeTab = tab;
+  if(tab === "weekdays"){
+    tabWeekdays.classList.add("active");
+    tabWeekend.classList.remove("active");
     weekdaysPage.classList.remove("hidden");
     weekendPage.classList.add("hidden");
+    weekdaysPage.classList.add("pop");
+    setTimeout(()=>weekdaysPage.classList.remove("pop"), 250);
   }else{
-    document.querySelectorAll(".tab-btn")[1].classList.add("active");
+    tabWeekend.classList.add("active");
+    tabWeekdays.classList.remove("active");
     weekendPage.classList.remove("hidden");
     weekdaysPage.classList.add("hidden");
+    weekendPage.classList.add("pop");
+    setTimeout(()=>weekendPage.classList.remove("pop"), 250);
   }
 }
 
-function toMinutes(t){const [h,m]=t.split(":").map(Number);return h*60+m;}
-function pad2(n){return String(n).padStart(2,'0');}
-function overlapsHour(slot,h){
-  const sh=toMinutes(slot.start);
-  const eh=toMinutes(slot.end);
-  return sh<(h+1)*60&&eh>h*60;
+tabWeekdays.addEventListener("click", () => setTab("weekdays"));
+tabWeekend.addEventListener("click", () => setTab("weekend"));
+
+/* =========================================================
+   Helpers
+   ========================================================= */
+function pad2(n){ return String(n).padStart(2,"0"); }
+
+function toMinutes(t){
+  const [h,m] = t.split(":").map(Number);
+  return h*60 + m;
 }
 
-function saveSlot(){
-  if(!start.value||!end.value)return;
-  const sm=toMinutes(start.value);
-  const em=toMinutes(end.value);
-  if(em<=sm)return;
+function overlapsHour(slot, hour){
+  const sh = toMinutes(slot.start);
+  const eh = toMinutes(slot.end);
+  const rowStart = hour*60;
+  const rowEnd = (hour+1)*60;
+  return sh < rowEnd && eh > rowStart;
+}
 
-  const slotData={
-    id:editingId||Date.now(),
-    type:type.value,
-    title:title.value||type.value,
-    day:day.value,start:start.value,end:end.value
+function getTodayName(){
+  const idx = new Date().getDay(); // 0 Sun - 6 Sat
+  if (idx === 0) return "Sunday";
+  if (idx === 6) return "Saturday";
+  return ["Monday","Tuesday","Wednesday","Thursday","Friday"][idx-1];
+}
+
+function escapeHtml(str){
+  return String(str)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+/* =========================================================
+   Inline Messages + field errors
+   ========================================================= */
+function clearFieldErrors(){
+  [dayEl, startEl, endEl, titleEl].forEach(el => el.classList.remove("field-error"));
+}
+
+function showMessage(kind, text){
+  msgBox.className = "message " + kind;
+  msgBox.textContent = text;
+  msgBox.style.display = "block";
+}
+
+function clearMessage(){
+  msgBox.className = "message";
+  msgBox.textContent = "";
+  msgBox.style.display = "none";
+}
+
+function setFieldError(el){
+  el.classList.add("field-error");
+}
+
+[startEl, endEl, dayEl, titleEl, typeEl].forEach(el => {
+  el.addEventListener("input", () => {
+    clearMessage();
+    clearFieldErrors();
+  });
+});
+
+/* =========================================================
+   Validation
+   ========================================================= */
+function getAllowedWindow(dayName){
+  if (WEEKDAYS.includes(dayName)) return WEEKDAY_WINDOW;
+  return WEEKEND_WINDOW;
+}
+
+function validateForm(){
+  clearMessage();
+  clearFieldErrors();
+
+  const dayName = dayEl.value;
+  const start = startEl.value;
+  const end   = endEl.value;
+
+  if (!dayName){
+    setFieldError(dayEl);
+    showMessage("error","Please select a day.");
+    return null;
+  }
+
+  if (!start || !end){
+    if (!start) setFieldError(startEl);
+    if (!end) setFieldError(endEl);
+    showMessage("error","Please select both start and end time.");
+    return null;
+  }
+
+  const sm = toMinutes(start);
+  const em = toMinutes(end);
+
+  if (em <= sm){
+    setFieldError(startEl);
+    setFieldError(endEl);
+    showMessage("error","End time must be after start time.");
+    return null;
+  }
+
+  const win = getAllowedWindow(dayName);
+  const isWeekday = WEEKDAYS.includes(dayName);
+  const label = isWeekday
+    ? "Weekdays allow only 8:00 PM to 12:00 AM."
+    : "Weekend allows only 8:00 AM to 12:00 AM.";
+
+  if (sm < win.startMin || em > win.endMin){
+    setFieldError(startEl);
+    setFieldError(endEl);
+    showMessage("error", label);
+    return null;
+  }
+
+  return { dayName, start, end };
+}
+
+/* =========================================================
+   Storage
+   ========================================================= */
+function loadSlots(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch{
+    return [];
+  }
+}
+
+function saveSlots(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(slots));
+}
+
+/* =========================================================
+   CRUD
+   ========================================================= */
+function resetForm(){
+  editingId = null;
+  typeEl.value = "study";
+  titleEl.value = "";
+  startEl.value = "";
+  endEl.value = "";
+  mainActionBtn.textContent = "Add Slot";
+  clearMessage();
+  clearFieldErrors();
+}
+clearFormBtn.addEventListener("click", resetForm);
+
+clearAllBtn.addEventListener("click", () => {
+  slots = [];
+  saveSlots();
+  renderAll();
+  resetForm();
+  showMessage("ok","All slots cleared.");
+  setTimeout(clearMessage, 1400);
+});
+
+function upsertSlot(){
+  const valid = validateForm();
+  if (!valid) return;
+
+  const slotData = {
+    id: editingId || Date.now(),
+    type: typeEl.value,
+    title: (titleEl.value || "").trim() || (
+      typeEl.value === "study" ? "Study" :
+      typeEl.value === "essential" ? "Essential" : "Non-Essential"
+    ),
+    day: valid.dayName,
+    start: valid.start,
+    end: valid.end
   };
 
-  if(editingId){
-    slots=slots.map(s=>s.id===editingId?slotData:s);
+  if (editingId){
+    slots = slots.map(s => s.id === editingId ? slotData : s);
+    showMessage("ok","Slot updated.");
   }else{
     slots.push(slotData);
+    showMessage("ok","Slot added.");
   }
 
-  localStorage.setItem("STUDY_SLOTS",JSON.stringify(slots));
-  render();
-  editingId=null;
-  title.value=start.value=end.value="";
-  mainActionBtn.textContent="Add Slot";
+  saveSlots();
+  renderAll();
+
+  // auto switch tab based on day
+  if (WEEKDAYS.includes(slotData.day)) setTab("weekdays");
+  else setTab("weekend");
+
+  resetForm();
+  setTimeout(clearMessage, 900);
 }
 
-function editSlot(id){
-  const s=slots.find(x=>x.id===id);
-  editingId=id;
-  type.value=s.type;
-  title.value=s.title;
-  day.value=s.day;
-  start.value=s.start;
-  end.value=s.end;
-  mainActionBtn.textContent="Update Slot";
+mainActionBtn.addEventListener("click", upsertSlot);
+
+function onEdit(id){
+  const s = slots.find(x => x.id === id);
+  if (!s) return;
+
+  editingId = id;
+  typeEl.value = s.type;
+  titleEl.value = s.title;
+  dayEl.value = s.day;
+  startEl.value = s.start;
+  endEl.value = s.end;
+
+  mainActionBtn.textContent = "Update Slot";
+  clearMessage();
+  clearFieldErrors();
+
+  if (WEEKDAYS.includes(s.day)) setTab("weekdays");
+  else setTab("weekend");
 }
 
-function deleteSlot(id){
-  slots=slots.filter(s=>s.id!==id);
-  localStorage.setItem("STUDY_SLOTS",JSON.stringify(slots));
-  render();
+function onDelete(id){
+  slots = slots.filter(s => s.id !== id);
+  saveSlots();
+  renderAll();
+  resetForm();
+  showMessage("ok","Slot deleted.");
+  setTimeout(clearMessage, 900);
 }
 
-function render(){
-  renderTable(WEEKDAYS,20,24,"weekdaysTable");
-  renderTable(WEEKEND,8,24,"weekendTable");
+/* =========================================================
+   Columns equal width (fixes big time column on Sat/Sun)
+   ========================================================= */
+function buildColGroup(daysCount){
+  // fixed time column + equal day columns
+  const cols = [];
+  cols.push(`<col style="width:88px">`);
+  for (let i=0; i<daysCount; i++){
+    cols.push(`<col style="width:${(100/daysCount).toFixed(6)}%">`);
+  }
+  return `<colgroup>${cols.join("")}</colgroup>`;
 }
 
-function renderTable(days,startHour,endHour,tableId){
-  let html="<tr><th>Time</th>";
-  days.forEach(d=>html+=`<th>${d}</th>`);
-  html+="</tr>";
+/* =========================================================
+   Rendering
+   ========================================================= */
+function renderTable(tableEl, days, startHour, endHour){
+  const now = new Date();
+  const currentHour = now.getHours();
+  const todayName = getTodayName();
 
-  for(let h=startHour;h<endHour;h++){
-    html+=`<tr><td>${pad2(h)}:00</td>`;
-    days.forEach(d=>{
-      const cellSlots=slots.filter(s=>s.day===d&&overlapsHour(s,h));
-      html+="<td>";
-      cellSlots.forEach(s=>{
-        html+=`
+  let html = "";
+  html += buildColGroup(days.length);
+
+  // Header
+  html += "<tr>";
+  html += `<th>Time</th>`;
+  for (const d of days){
+    html += `<th class="${d === todayName ? "today-column" : ""}">${d}</th>`;
+  }
+  html += "</tr>";
+
+  // Rows
+  for (let h=startHour; h<endHour; h++){
+    const isCurrent = (h === currentHour);
+    html += `<tr class="${isCurrent ? "current-hour" : ""}">`;
+    html += `<td class="time-cell">${pad2(h)}:00</td>`;
+
+    for (const d of days){
+      const todayClass = d === todayName ? "today-column" : "";
+      const cellSlots = slots
+        .filter(s => s.day === d)
+        .filter(s => overlapsHour(s, h))
+        .sort((a,b) => toMinutes(a.start) - toMinutes(b.start));
+
+      html += `<td class="${todayClass}">`;
+
+      for (const s of cellSlots){
+        html += `
           <div class="block ${s.type}">
-            <strong>${s.title}</strong><br>
-            ${s.start} - ${s.end}<br>
-            <button class="action-btn edit" onclick="editSlot(${s.id})">Edit</button>
-            <button class="action-btn delete" onclick="deleteSlot(${s.id})">Delete</button>
+            <span class="block-title">${escapeHtml(s.title)}</span>
+            <span class="block-time">${s.start} – ${s.end}</span>
+            <div class="block-actions">
+              <button class="action-btn edit" type="button" data-edit="${s.id}">Edit</button>
+              <button class="action-btn delete" type="button" data-del="${s.id}">Delete</button>
+            </div>
           </div>
         `;
-      });
-      html+="</td>";
-    });
-    html+="</tr>";
+      }
+
+      html += `</td>`;
+    }
+
+    html += `</tr>`;
   }
 
-  document.getElementById(tableId).innerHTML=html;
+  tableEl.innerHTML = html;
+
+  // wire buttons (safe delegation via query)
+  tableEl.querySelectorAll("[data-edit]").forEach(btn => {
+    btn.addEventListener("click", () => onEdit(Number(btn.getAttribute("data-edit"))));
+  });
+  tableEl.querySelectorAll("[data-del]").forEach(btn => {
+    btn.addEventListener("click", () => onDelete(Number(btn.getAttribute("data-del"))));
+  });
 }
 
-render();
+/* Stats */
+function computeHours(){
+  let study = 0, essential = 0, non = 0;
+
+  for(const s of slots){
+    const dur = (toMinutes(s.end) - toMinutes(s.start)) / 60;
+    if (s.type === "study") study += dur;
+    if (s.type === "essential") essential += dur;
+    if (s.type === "nonessential") non += dur;
+  }
+
+  const round = (x) => Math.round(x*10)/10;
+
+  statsBox.innerHTML = `
+    <div><b>📚 Study:</b> ${round(study)}h</div>
+    <div><b>⚡ Essential:</b> ${round(essential)}h</div>
+    <div><b>🚫 Non-Essential:</b> ${round(non)}h</div>
+    <div style="margin-top:6px;color:rgba(42,42,42,0.72);font-size:12px;">
+      Weekdays: 8 PM–12 AM • Weekend: 8 AM–12 AM
+    </div>
+  `;
+}
+
+function renderAll(){
+  renderTable(weekdaysTable, WEEKDAYS, 20, 24);
+  renderTable(weekendTable, WEEKEND, 8, 24);
+  computeHours();
+}
+
+/* Start */
+renderAll();
+setTab("weekdays");
+
+/* Refresh highlights every minute (current hour & today col) */
+setInterval(renderAll, 60000);
 </script>
 
 </body>
