@@ -10,8 +10,8 @@
   --paper:#fdfbf7;
   --ink:#1f2937;
   --muted:#6b7280;
-  --line:#dbeafe;
-  --margin-line:#f87171;
+  --line:#e0ecff;
+  --margin-line:#ef4444;
 
   --accent:#2563eb;
 
@@ -26,17 +26,17 @@
   padding:0;
 }
 
-/* 📒 Paper background */
 body{
   font-family: "Georgia", serif;
   background: var(--paper);
   color: var(--ink);
-  padding:60px 60px 60px 140px; /* left padding prevents overlap */
+  padding:60px 60px 60px 160px;
   min-height:100vh;
   position:relative;
+  overflow-x:hidden;
 }
 
-/* Ruled lines */
+/* 📄 Paper lines */
 body::before{
   content:"";
   position:fixed;
@@ -45,20 +45,21 @@ body::before{
     repeating-linear-gradient(
       to bottom,
       transparent 0px,
-      transparent 28px,
-      var(--line) 29px
+      transparent 27px,
+      var(--line) 28px
     );
   pointer-events:none;
   z-index:0;
+  opacity:.6;
 }
 
-/* Margin red line */
+/* 🔴 Margin line */
 body::after{
   content:"";
   position:fixed;
   top:0;
   bottom:0;
-  left:100px;
+  left:120px;
   width:2px;
   background:var(--margin-line);
   pointer-events:none;
@@ -67,6 +68,18 @@ body::after{
 
 body > *{
   position:relative;
+  z-index:2;
+}
+
+/* 📎 Spiral binding */
+.spiral{
+  position:fixed;
+  top:0;
+  bottom:0;
+  left:60px;
+  width:30px;
+  background:
+    radial-gradient(circle at center, #bbb 4px, transparent 5px) center 20px/20px 40px repeat-y;
   z-index:1;
 }
 
@@ -84,36 +97,30 @@ body > *{
 
 .splash-content{
   text-align:center;
-  animation:scaleUp 1.5s ease;
+  animation:scaleUp 1.2s ease;
 }
 
 .logo-text{
-  font-size:48px;
+  font-size:52px;
   font-weight:700;
   color:white;
-  letter-spacing:1px;
-  animation:glowPulse 1.5s infinite alternate;
 }
 
 .logo-sub{
   margin-top:12px;
-  font-size:14px;
+  font-size:16px;
   color:#cbd5e1;
-  opacity:0.8;
-}
-
-@keyframes glowPulse{
-  from{ text-shadow:0 0 10px rgba(255,255,255,0.3); }
-  to{ text-shadow:0 0 30px rgba(255,255,255,0.8); }
+  letter-spacing:1px;
+  opacity:.85;
 }
 
 @keyframes scaleUp{
-  from{ transform:scale(0.8); opacity:0; }
-  to{ transform:scale(1); opacity:1; }
+  from{transform:scale(0.7);opacity:0;}
+  to{transform:scale(1);opacity:1;}
 }
 
 @keyframes fadeOut{
-  to{ opacity:0; visibility:hidden; }
+  to{opacity:0;visibility:hidden;}
 }
 
 /* ================= HEADER ================= */
@@ -122,31 +129,30 @@ body > *{
 }
 
 h1{
-  font-size:40px;
+  font-size:42px;
   font-weight:700;
 }
 
 .subtitle{
   margin-top:8px;
   color:var(--muted);
-  font-size:15px;
 }
 
 /* Tabs */
 .tabs{
   margin-top:40px;
   display:flex;
-  gap:14px;
   justify-content:center;
+  gap:20px;
 }
 
 .tab-btn{
-  padding:8px 20px;
-  border-radius:6px;
-  border:1px solid #e5e7eb;
+  padding:8px 22px;
+  border:1px solid #d1d5db;
   background:white;
   cursor:pointer;
   font-family:inherit;
+  transition:.2s;
 }
 
 .tab-btn.active{
@@ -167,11 +173,9 @@ h1{
   .wrapper{grid-template-columns:1fr}
 }
 
-/* Card */
 .card{
   background:white;
   border:1px solid #e5e7eb;
-  border-radius:6px;
   padding:26px;
 }
 
@@ -186,29 +190,29 @@ label{
 input,select{
   width:100%;
   margin-top:6px;
-  padding:10px;
-  border-radius:4px;
+  padding:8px;
   border:1px solid #d1d5db;
-  background:white;
   font-family:inherit;
 }
 
 #mainActionBtn{
   margin-top:20px;
-  padding:12px;
-  border-radius:4px;
-  border:none;
+  padding:10px;
   background:var(--accent);
   color:white;
-  font-weight:600;
+  border:none;
   cursor:pointer;
+}
+
+/* Pages */
+.hidden{
+  display:none;
 }
 
 /* Table */
 table{
   width:100%;
   border-collapse:collapse;
-  margin-top:10px;
   table-layout:fixed;
   background:white;
 }
@@ -224,54 +228,33 @@ td:first-child{
   width:90px;
 }
 
-th{
-  font-size:12px;
-  color:var(--muted);
-  background:#f9fafb;
-}
-
-.time-cell{
-  font-size:12px;
-  color:var(--muted);
-}
-
-/* Blocks */
 .block{
-  border-radius:4px;
-  padding:8px;
-  margin-bottom:6px;
-  font-size:13px;
   background:#f9fafb;
+  padding:6px;
+  margin-bottom:6px;
+  border-left:4px solid;
 }
 
-.study{
-  border-left:4px solid var(--study);
-}
-.essential{
-  border-left:4px solid var(--essential);
-}
-.nonessential{
-  border-left:4px solid var(--non);
-}
+.study{border-color:var(--study);}
+.essential{border-color:var(--essential);}
+.nonessential{border-color:var(--non);}
 
 .action-btn{
-  margin-top:6px;
-  padding:4px 8px;
-  border-radius:4px;
+  margin-top:5px;
+  padding:4px 6px;
   font-size:11px;
   border:none;
-  cursor:pointer;
-  margin-right:6px;
   color:white;
+  cursor:pointer;
 }
-.action-btn.edit{background:#16a34a;}
-.action-btn.delete{background:#dc2626;}
-
-.hidden{display:none}
+.edit{background:#16a34a;}
+.delete{background:#dc2626;}
 </style>
 </head>
 
 <body>
+
+<div class="spiral"></div>
 
 <!-- SPLASH -->
 <div id="splash">
@@ -419,7 +402,7 @@ function renderTable(days,startHour,endHour,tableId){
   html+="</tr>";
 
   for(let h=startHour;h<endHour;h++){
-    html+=`<tr><td class="time-cell">${pad2(h)}:00</td>`;
+    html+=`<tr><td>${pad2(h)}:00</td>`;
     days.forEach(d=>{
       const cellSlots=slots.filter(s=>s.day===d&&overlapsHour(s,h));
       html+="<td>";
