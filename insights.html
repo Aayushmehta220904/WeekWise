@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WeekWise — Insights</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="page">
+    <section class="notebook">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-title">Insights</div>
+          <div class="brand-sub">Your week — visualized + scored.</div>
+        </div>
+        <div class="actions">
+          <a class="btn btn-ghost" href="index.html">Back</a>
+        </div>
+      </header>
+
+      <div class="insights-grid">
+        <div class="card">
+          <div class="card-title">Weekly Summary</div>
+          <div id="summaryStats" class="stats"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Daily Productivity Score (Animated)</div>
+          <canvas id="scoreChart" height="220"></canvas>
+          <div class="hint">Score is based on Study / Essential / Non-Essential slot choices.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Slot Mix (Animated)</div>
+          <canvas id="mixChart" height="220"></canvas>
+          <div class="hint">Shows how your week is distributed across slot types.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="insights.js"></script>
+</body>
+</html>
