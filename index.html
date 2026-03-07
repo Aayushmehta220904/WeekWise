@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WeekWise</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Intro Screen -->
+  <div id="intro" class="intro">
+    <div class="intro-card">
+      <div class="intro-title">WeekWise</div>
+      <div class="typewriter">
+        <span id="typeText"></span><span class="caret">|</span>
+      </div>
+      <div class="intro-sub">A vintage timetable that keeps you honest.</div>
+    </div>
+  </div>
+
+  <main class="page">
+    <section class="notebook">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-title">WeekWise</div>
+          <div class="brand-sub">Plan smart. Execute better.</div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-ghost" id="btnClearAll">Clear All</button>
+        </div>
+      </header>
+
+      <div class="legend">
+        <div class="pill study">Study</div>
+        <div class="pill essential">Essential Break</div>
+        <div class="pill nonessential">Non-Essential Break</div>
+        <div class="pill empty">Empty</div>
+        <div class="pill now">Now</div>
+      </div>
+
+      <div id="timetable" class="timetable"></div>
+    </section>
+  </main>
+
+  <!-- Modal -->
+  <div id="modalOverlay" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-head">
+        <div class="modal-title" id="modalTitle">Edit Slot</div>
+        <button class="icon-btn" id="btnCloseModal" aria-label="Close">✕</button>
+      </div>
+
+      <div class="modal-meta" id="modalMeta"></div>
+
+      <div class="modal-body">
+        <label class="field">
+          <span>Type</span>
+          <select id="slotType">
+            <option value="empty">Empty</option>
+            <option value="study">Study</option>
+            <option value="essential">Essential Break</option>
+            <option value="nonessential">Non-Essential Break</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Title (optional)</span>
+          <input id="slotTitle" type="text" placeholder="e.g., AI Lecture / Gym / Break" maxlength="40"/>
+        </label>
+
+        <label class="field">
+          <span>Notes (optional)</span>
+          <textarea id="slotNotes" rows="3" placeholder="Short notes…" maxlength="140"></textarea>
+        </label>
+      </div>
+
+      <div class="modal-foot">
+        <button class="btn btn-danger" id="btnDeleteSlot">Delete</button>
+        <div class="spacer"></div>
+        <button class="btn btn-ghost" id="btnCancel">Cancel</button>
+        <button class="btn btn-primary" id="btnSave">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
