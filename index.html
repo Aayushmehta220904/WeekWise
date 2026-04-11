@@ -28,43 +28,54 @@
         </div>
 
         <div class="actions">
+          <button class="btn btn-ghost" id="btnManageTags">Manage Tags</button>
           <button class="btn btn-ghost" id="btnClearAll">Clear All</button>
         </div>
       </header>
 
-      <div class="legend">
-        <div class="pill study">Study</div>
-        <div class="pill essential">Essential Break</div>
-        <div class="pill nonessential">Non-Essential Break</div>
-        <div class="pill empty">Empty</div>
-        <div class="pill now">Now</div>
+      <!-- Dynamic multi-select tag filters -->
+      <div class="filters-wrap">
+        <div class="filters-head">
+          <div class="filters-title">Filters</div>
+          <div class="filters-sub" id="filtersSubText">Select one or more tags</div>
+        </div>
+        <div id="tagFilters" class="tag-filters"></div>
       </div>
+
+      <!-- Analytics Dashboard -->
+      <section class="insights-grid">
+        <div class="card">
+          <div class="card-title">Weekly Analytics</div>
+          <div class="stats" id="statsGrid"></div>
+          <div class="hint" id="analyticsHint">Each slot counts as 1 hour.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Tag Breakdown</div>
+          <div id="tagBreakdown" class="tag-breakdown"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Day Breakdown</div>
+          <div id="dayBreakdown" class="day-breakdown"></div>
+        </div>
+      </section>
 
       <div id="timetable" class="timetable"></div>
     </section>
   </main>
 
-  <!-- Modal -->
+  <!-- Slot Modal -->
   <div id="modalOverlay" class="modal-overlay hidden">
     <div class="modal">
       <div class="modal-head">
-        <div class="modal-title" id="modalTitle">Edit Slot</div>
+        <div class="modal-title">Edit Slot</div>
         <button class="icon-btn" id="btnCloseModal" aria-label="Close">✕</button>
       </div>
 
       <div class="modal-meta" id="modalMeta"></div>
 
       <div class="modal-body">
-        <label class="field">
-          <span>Type</span>
-          <select id="slotType">
-            <option value="empty">Empty</option>
-            <option value="study">Study</option>
-            <option value="essential">Essential Break</option>
-            <option value="nonessential">Non-Essential Break</option>
-          </select>
-        </label>
-
         <label class="field">
           <span>Title (optional)</span>
           <input id="slotTitle" type="text" placeholder="e.g., AI Lecture / Gym / Break" maxlength="40"/>
@@ -74,6 +85,40 @@
           <span>Notes (optional)</span>
           <textarea id="slotNotes" rows="3" placeholder="Short notes…" maxlength="140"></textarea>
         </label>
+
+        <div class="field">
+          <span>Selected Tags</span>
+          <div id="selectedTagsPreview" class="selected-tags-preview empty-preview">
+            No tags selected
+          </div>
+        </div>
+
+        <div class="field">
+          <span>Available Tags</span>
+          <div id="availableTags" class="available-tags"></div>
+        </div>
+
+        <div class="field create-tag-box">
+          <span>Create New Tag</span>
+          <div class="create-tag-row">
+            <input id="newTagName" type="text" placeholder="Tag name (e.g., Study, Gym, Revision)" maxlength="24" />
+            <input id="newTagColor" type="color" value="#baf3c0" />
+            <button class="btn btn-ghost" id="btnAddTag" type="button">Add Tag</button>
+          </div>
+          <div class="mini-hint">
+            If the same tag already exists, its saved color will be reused.
+          </div>
+        </div>
+
+        <label class="field">
+          <span>Apply To</span>
+          <select id="applyScope">
+            <option value="this_slot">Only this slot</option>
+            <option value="weekdays_same_hour">All weekdays at this hour</option>
+            <option value="weekends_same_hour">All weekends at this hour</option>
+            <option value="all_days_same_hour">All days at this hour</option>
+          </select>
+        </label>
       </div>
 
       <div class="modal-foot">
@@ -81,6 +126,27 @@
         <div class="spacer"></div>
         <button class="btn btn-ghost" id="btnCancel">Cancel</button>
         <button class="btn btn-primary" id="btnSave">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manage Tags Modal -->
+  <div id="tagManagerOverlay" class="modal-overlay hidden">
+    <div class="modal large-modal">
+      <div class="modal-head">
+        <div class="modal-title">Manage Tags</div>
+        <button class="icon-btn" id="btnCloseTagManager" aria-label="Close">✕</button>
+      </div>
+
+      <div class="modal-meta">Edit tag names and colors globally, or delete them from the project.</div>
+
+      <div class="modal-body">
+        <div id="tagManagerList" class="tag-manager-list"></div>
+      </div>
+
+      <div class="modal-foot">
+        <div class="spacer"></div>
+        <button class="btn btn-ghost" id="btnCloseTagManager2">Close</button>
       </div>
     </div>
   </div>
