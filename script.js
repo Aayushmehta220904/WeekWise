@@ -8,6 +8,7 @@
    - Recurring/copy by similar days
    - Weekly analytics dashboard
    - Legacy V2 migration supported
+   - All days now use 12 AM to 11 PM
    =========================== */
 
 const STORAGE_KEY_V3 = "WEEKWISE_DATA_V3";
@@ -27,10 +28,8 @@ function isWeekend(dayName){
 }
 
 function buildHoursForDay(dayName){
-  const start = isWeekend(dayName) ? 8 : 20;
-  const end = 24;
   const hours = [];
-  for(let h = start; h < end; h++) hours.push(h);
+  for(let h = 0; h < 24; h++) hours.push(h);
   return hours;
 }
 
@@ -638,7 +637,7 @@ function renderTimetable(){
 
     const sub = document.createElement("div");
     sub.className = "day-sub";
-    sub.textContent = isWeekend(dayName) ? "8 AM — 11 PM" : "8 PM — 11 PM";
+    sub.textContent = "12 AM — 11 PM";
 
     head.appendChild(title);
     head.appendChild(sub);
