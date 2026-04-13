@@ -8,7 +8,6 @@
 </head>
 <body>
 
-  <!-- Intro Screen -->
   <div id="intro" class="intro">
     <div class="intro-card">
       <div class="intro-title">WeekWise</div>
@@ -33,7 +32,6 @@
         </div>
       </header>
 
-      <!-- Dynamic multi-select tag filters -->
       <div class="filters-wrap">
         <div class="filters-head">
           <div class="filters-title">Filters</div>
@@ -42,12 +40,11 @@
         <div id="tagFilters" class="tag-filters"></div>
       </div>
 
-      <!-- Analytics Dashboard -->
       <section class="insights-grid">
         <div class="card">
           <div class="card-title">Weekly Analytics</div>
           <div class="stats" id="statsGrid"></div>
-          <div class="hint" id="analyticsHint">Each slot counts as 1 hour.</div>
+          <div class="hint">Each slot counts as 1 hour.</div>
         </div>
 
         <div class="card">
@@ -147,6 +144,40 @@
       <div class="modal-foot">
         <div class="spacer"></div>
         <button class="btn btn-ghost" id="btnCloseTagManager2">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Day Variant Modal -->
+  <div id="variantOverlay" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-head">
+        <div class="modal-title">Manage Day Variant</div>
+        <button class="icon-btn" id="btnCloseVariantModal" aria-label="Close">✕</button>
+      </div>
+
+      <div class="modal-meta" id="variantModalMeta"></div>
+
+      <div class="modal-body">
+        <label class="field">
+          <span>New Variant Name</span>
+          <input id="newVariantName" type="text" placeholder="e.g., Holiday Tuesday / Exam Tuesday" maxlength="40" />
+        </label>
+
+        <div class="variant-actions">
+          <button class="btn btn-ghost" id="btnCreateVariant">Create from Current</button>
+          <button class="btn btn-ghost" id="btnRenameVariant">Rename Current</button>
+          <button class="btn btn-danger" id="btnDeleteVariant">Delete Current</button>
+        </div>
+
+        <div class="mini-hint">
+          Default variant cannot be deleted. New variants are copied from the currently active schedule of that day.
+        </div>
+      </div>
+
+      <div class="modal-foot">
+        <div class="spacer"></div>
+        <button class="btn btn-ghost" id="btnCloseVariantModal2">Close</button>
       </div>
     </div>
   </div>

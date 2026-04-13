@@ -1,17 +1,17 @@
 /* ===========================
-   WeekWise — Timetable (Updated)
-   Features:
-   - Dynamic reusable tags with custom colors
-   - Multiple tags per slot
-   - Global edit/delete tags
-   - Multi-select top filters (AND logic)
-   - Recurring/copy by similar days
-   - Weekly analytics dashboard
-   - Legacy V2 migration supported
-   - All days now use 12 AM to 11 PM
+   WeekWise
+   - all days: 12 AM to 11 PM
+   - dynamic reusable tags
+   - multiple tags per slot
+   - global tag edit/delete
+   - multi-select filters
+   - recurring fill
+   - weekly analytics
+   - per-day variants
    =========================== */
 
-const STORAGE_KEY_V3 = "WEEKWISE_DATA_V3";
+const STORAGE_KEY_V4 = "WEEKWISE_DATA_V4";
+const LEGACY_KEY_V3 = "WEEKWISE_DATA_V3";
 const LEGACY_KEY_V2 = "WEEKWISE_SLOTS_V2";
 
 const DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
@@ -23,11 +23,7 @@ const LEGACY_TYPE_MAP = {
   nonessential: { name: "Non-Essential Break", color: "#ffb4b4" }
 };
 
-function isWeekend(dayName){
-  return dayName === "Saturday" || dayName === "Sunday";
-}
-
-function buildHoursForDay(dayName){
+function buildHoursForDay(){
   const hours = [];
   for(let h = 0; h < 24; h++) hours.push(h);
   return hours;
@@ -39,8 +35,8 @@ function hourToLabel(h){
   return `${hour12}:00 ${suffix}`;
 }
 
-function slotId(dayName, hour){
-  return `${dayName}__${hour}`;
+function slotHourKey(hour){
+  return String(hour);
 }
 
 function normalizeTagName(name){
@@ -68,15 +64,45 @@ function defaultSlot(){
   };
 }
 
+function clone(obj){
+  return JSON.parse(JSON.stringify(obj));
+}
+
 function generateTagId(name){
   const cleaned = normalizeTagKey(name).replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   return cleaned || `tag-${Date.now()}`;
 }
 
-/* ===== Data ===== */
-function migrateLegacyData(){
+function slugifyVariant(name){
+  return normalizeTagKey(name).replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || `variant-${Date.now()}`;
+}
+
+function getDefaultVariantsState(){
+  const dayVariants = {};
+  DISPLAY_DAYS.forEach(day => {
+    dayVariants[day] = {
+      activeVariantId: "default",
+      variants: {
+        default: {
+          id: "default",
+          name: "Default",
+          slots: {}
+        }
+      }
+    };
+  });
+  return dayVariants;
+}
+
+/* ===== Migration ===== */
+function migrateFromV2(){
   const raw = localStorage.getItem(LEGACY_KEY_V2);
-  if(!raw) return { tags: {}, slots: {} };
+  const app = {
+    tags: {},
+    dayVariants: getDefaultVariantsState()
+  };
+
+  if(!raw) return app;
 
   let oldSlots = {};
   try{
@@ -85,11 +111,13 @@ function migrateLegacyData(){
     oldSlots = {};
   }
 
-  const tags = {};
-  const slots = {};
-
   Object.entries(oldSlots).forEach(([id, value]) => {
     const old = value || {};
+    const [dayName, hourStr] = id.split("__");
+    const hour = Number(hourStr);
+
+    if(!app.dayVariants[dayName] || Number.isNaN(hour)) return;
+
     const slot = defaultSlot();
     slot.title = String(old.title || "").trim();
     slot.notes = String(old.notes || "").trim();
@@ -98,8 +126,8 @@ function migrateLegacyData(){
       const legacyTag = LEGACY_TYPE_MAP[old.type];
       const tagId = generateTagId(legacyTag.name);
 
-      if(!tags[tagId]){
-        tags[tagId] = {
+      if(!app.tags[tagId]){
+        app.tags[tagId] = {
           id: tagId,
           name: legacyTag.name,
           color: legacyTag.color
@@ -110,7 +138,7 @@ function migrateLegacyData(){
     }
 
     if(slot.title || slot.notes || slot.tagIds.length){
-      slots[id] = {
+      app.dayVariants[dayName].variants.default.slots[slotHourKey(hour)] = {
         title: slot.title,
         notes: slot.notes,
         tagIds: uniqueArray(slot.tagIds)
@@ -118,30 +146,69 @@ function migrateLegacyData(){
     }
   });
 
-  return { tags, slots };
+  return app;
+}
+
+function migrateFromV3(){
+  const raw = localStorage.getItem(LEGACY_KEY_V3);
+  if(!raw) return null;
+
+  try{
+    const parsed = JSON.parse(raw);
+    const app = {
+      tags: parsed.tags && typeof parsed.tags === "object" ? parsed.tags : {},
+      dayVariants: getDefaultVariantsState()
+    };
+
+    const slots = parsed.slots && typeof parsed.slots === "object" ? parsed.slots : {};
+
+    Object.entries(slots).forEach(([id, slot]) => {
+      const [dayName, hourStr] = id.split("__");
+      const hour = Number(hourStr);
+
+      if(!app.dayVariants[dayName] || Number.isNaN(hour)) return;
+
+      const cleanSlot = {
+        title: String(slot.title || "").trim(),
+        notes: String(slot.notes || "").trim(),
+        tagIds: Array.isArray(slot.tagIds) ? uniqueArray(slot.tagIds) : []
+      };
+
+      if(cleanSlot.title || cleanSlot.notes || cleanSlot.tagIds.length){
+        app.dayVariants[dayName].variants.default.slots[slotHourKey(hour)] = cleanSlot;
+      }
+    });
+
+    return app;
+  }catch{
+    return null;
+  }
 }
 
 function loadData(){
-  const raw = localStorage.getItem(STORAGE_KEY_V3);
+  const raw = localStorage.getItem(STORAGE_KEY_V4);
   if(raw){
     try{
       const parsed = JSON.parse(raw);
-      if(parsed && typeof parsed === "object"){
-        return {
-          tags: parsed.tags && typeof parsed.tags === "object" ? parsed.tags : {},
-          slots: parsed.slots && typeof parsed.slots === "object" ? parsed.slots : {}
-        };
+      if(parsed && typeof parsed === "object" && parsed.dayVariants){
+        return parsed;
       }
     }catch{}
   }
 
-  const migrated = migrateLegacyData();
-  localStorage.setItem(STORAGE_KEY_V3, JSON.stringify(migrated));
-  return migrated;
+  const migratedV3 = migrateFromV3();
+  if(migratedV3){
+    localStorage.setItem(STORAGE_KEY_V4, JSON.stringify(migratedV3));
+    return migratedV3;
+  }
+
+  const migratedV2 = migrateFromV2();
+  localStorage.setItem(STORAGE_KEY_V4, JSON.stringify(migratedV2));
+  return migratedV2;
 }
 
 function saveData(){
-  localStorage.setItem(STORAGE_KEY_V3, JSON.stringify(appData));
+  localStorage.setItem(STORAGE_KEY_V4, JSON.stringify(appData));
 }
 
 let appData = loadData();
@@ -181,9 +248,20 @@ const btnCloseTagManager = document.getElementById("btnCloseTagManager");
 const btnCloseTagManager2 = document.getElementById("btnCloseTagManager2");
 const tagManagerList = document.getElementById("tagManagerList");
 
+const variantOverlay = document.getElementById("variantOverlay");
+const btnCloseVariantModal = document.getElementById("btnCloseVariantModal");
+const btnCloseVariantModal2 = document.getElementById("btnCloseVariantModal2");
+const variantModalMeta = document.getElementById("variantModalMeta");
+const newVariantNameInput = document.getElementById("newVariantName");
+const btnCreateVariant = document.getElementById("btnCreateVariant");
+const btnRenameVariant = document.getElementById("btnRenameVariant");
+const btnDeleteVariant = document.getElementById("btnDeleteVariant");
+
 let activeDay = null;
 let activeHour = null;
 let modalSelectedTagIds = [];
+
+let variantManageDay = null;
 
 /* ===== Intro ===== */
 const introText = "Your week. One page. Zero excuses.";
@@ -206,9 +284,9 @@ function runTypewriter(){
 }
 runTypewriter();
 
-/* ===== Helpers ===== */
+/* ===== Tag helpers ===== */
 function getTagsArray(){
-  return Object.values(appData.tags).sort((a, b) => a.name.localeCompare(b.name));
+  return Object.values(appData.tags || {}).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function getTagById(tagId){
@@ -273,22 +351,139 @@ function deleteTagGlobally(tagId){
 
   delete appData.tags[tagId];
 
-  Object.keys(appData.slots).forEach(id => {
-    const slot = appData.slots[id];
-    slot.tagIds = (slot.tagIds || []).filter(id => id !== tagId);
+  DISPLAY_DAYS.forEach(day => {
+    const state = appData.dayVariants[day];
+    Object.values(state.variants).forEach(variant => {
+      Object.keys(variant.slots).forEach(hourKey => {
+        const slot = variant.slots[hourKey];
+        slot.tagIds = (slot.tagIds || []).filter(id => id !== tagId);
 
-    if(!slot.title && !slot.notes && slot.tagIds.length === 0){
-      delete appData.slots[id];
-    }
+        if(!slot.title && !slot.notes && slot.tagIds.length === 0){
+          delete variant.slots[hourKey];
+        }
+      });
+    });
   });
 
   activeFilters = activeFilters.filter(id => id !== tagId);
   saveData();
 }
 
-function getSlotData(dayName, hour){
-  const id = slotId(dayName, hour);
-  const data = appData.slots[id] || defaultSlot();
+/* ===== Variant helpers ===== */
+function ensureDayVariantState(dayName){
+  if(!appData.dayVariants[dayName]){
+    appData.dayVariants[dayName] = {
+      activeVariantId: "default",
+      variants: {
+        default: {
+          id: "default",
+          name: "Default",
+          slots: {}
+        }
+      }
+    };
+  }
+  return appData.dayVariants[dayName];
+}
+
+function getDayState(dayName){
+  return ensureDayVariantState(dayName);
+}
+
+function getActiveVariant(dayName){
+  const state = getDayState(dayName);
+  return state.variants[state.activeVariantId] || state.variants.default;
+}
+
+function getActiveVariantId(dayName){
+  return getDayState(dayName).activeVariantId;
+}
+
+function getVariantsArray(dayName){
+  const state = getDayState(dayName);
+  return Object.values(state.variants);
+}
+
+function switchActiveVariant(dayName, variantId){
+  const state = getDayState(dayName);
+  if(!state.variants[variantId]) return;
+  state.activeVariantId = variantId;
+  saveData();
+  render();
+}
+
+function createVariantForDay(dayName, variantName){
+  const cleanName = normalizeTagName(variantName);
+  if(!cleanName) return { ok:false, message:"Variant name cannot be empty" };
+
+  const state = getDayState(dayName);
+  const duplicateName = Object.values(state.variants).find(
+    v => normalizeTagKey(v.name) === normalizeTagKey(cleanName)
+  );
+  if(duplicateName){
+    return { ok:false, message:"Variant name already exists for this day" };
+  }
+
+  let variantId = slugifyVariant(cleanName);
+  let count = 1;
+  while(state.variants[variantId]){
+    count += 1;
+    variantId = `${slugifyVariant(cleanName)}-${count}`;
+  }
+
+  const currentVariant = getActiveVariant(dayName);
+
+  state.variants[variantId] = {
+    id: variantId,
+    name: cleanName,
+    slots: clone(currentVariant.slots || {})
+  };
+  state.activeVariantId = variantId;
+  saveData();
+  return { ok:true };
+}
+
+function renameCurrentVariant(dayName, newName){
+  const cleanName = normalizeTagName(newName);
+  if(!cleanName) return { ok:false, message:"Variant name cannot be empty" };
+
+  const state = getDayState(dayName);
+  const currentId = state.activeVariantId;
+  const current = state.variants[currentId];
+  if(!current) return { ok:false, message:"Variant not found" };
+
+  const duplicate = Object.values(state.variants).find(
+    v => v.id !== currentId && normalizeTagKey(v.name) === normalizeTagKey(cleanName)
+  );
+  if(duplicate){
+    return { ok:false, message:"Variant name already exists for this day" };
+  }
+
+  current.name = cleanName;
+  saveData();
+  return { ok:true };
+}
+
+function deleteCurrentVariant(dayName){
+  const state = getDayState(dayName);
+  const currentId = state.activeVariantId;
+  if(currentId === "default"){
+    return { ok:false, message:"Default variant cannot be deleted" };
+  }
+
+  delete state.variants[currentId];
+  state.activeVariantId = "default";
+  saveData();
+  return { ok:true };
+}
+
+/* ===== Slot helpers ===== */
+function getSlotData(dayName, hour, variantId = null){
+  const state = getDayState(dayName);
+  const activeId = variantId || state.activeVariantId;
+  const variant = state.variants[activeId] || state.variants.default;
+  const data = variant.slots[slotHourKey(hour)] || defaultSlot();
+
   return {
     title: String(data.title || ""),
     notes: String(data.notes || ""),
@@ -298,17 +493,23 @@ function getSlotData(dayName, hour){
   };
 }
 
-function setSlotForSpecificId(slotKey, payload){
+function setSlotForDayVariant(dayName, variantId, hour, payload){
+  const state = getDayState(dayName);
+  const variant = state.variants[variantId];
+  if(!variant) return;
+
   const cleanPayload = {
     title: String(payload.title || "").trim(),
     notes: String(payload.notes || "").trim(),
     tagIds: uniqueArray(Array.isArray(payload.tagIds) ? payload.tagIds : []).filter(tagId => !!appData.tags[tagId])
   };
 
+  const key = slotHourKey(hour);
+
   if(!cleanPayload.title && !cleanPayload.notes && cleanPayload.tagIds.length === 0){
-    delete appData.slots[slotKey];
+    delete variant.slots[key];
   }else{
-    appData.slots[slotKey] = cleanPayload;
+    variant.slots[key] = cleanPayload;
   }
 }
 
@@ -325,18 +526,12 @@ function getScopeTargetDays(scope){
   return [activeDay];
 }
 
-function canHourExistForDay(dayName, hour){
-  return buildHoursForDay(dayName).includes(hour);
-}
-
 function applySlotPayload(scope, payload){
   const targetDays = getScopeTargetDays(scope);
 
   targetDays.forEach(dayName => {
-    if(canHourExistForDay(dayName, activeHour)){
-      const id = slotId(dayName, activeHour);
-      setSlotForSpecificId(id, payload);
-    }
+    const variantId = getActiveVariantId(dayName);
+    setSlotForDayVariant(dayName, variantId, activeHour, payload);
   });
 
   saveData();
@@ -345,13 +540,14 @@ function applySlotPayload(scope, payload){
 
 function deleteSlotByScope(scope){
   const targetDays = getScopeTargetDays(scope);
-
   targetDays.forEach(dayName => {
-    if(canHourExistForDay(dayName, activeHour)){
-      delete appData.slots[slotId(dayName, activeHour)];
+    const variantId = getActiveVariantId(dayName);
+    const state = getDayState(dayName);
+    const variant = state.variants[variantId];
+    if(variant){
+      delete variant.slots[slotHourKey(activeHour)];
     }
   });
-
   saveData();
   render();
 }
@@ -381,18 +577,13 @@ function createColorDot(color, className = "tag-color-dot"){
   return dot;
 }
 
+/* ===== Filters ===== */
 function isVisibleByFilter(slot){
   if(activeFilters.length === 0) return true;
   return activeFilters.every(filterId => slot.tagIds.includes(filterId));
 }
 
-function getTotalPossibleSlots(){
-  return DISPLAY_DAYS.reduce((sum, day) => sum + buildHoursForDay(day).length, 0);
-}
-
-/* ===== Filters ===== */
 function renderFilters(){
-  if(!tagFilters) return;
   tagFilters.innerHTML = "";
 
   const allBtn = document.createElement("button");
@@ -423,44 +614,49 @@ function renderFilters(){
     tagFilters.appendChild(btn);
   });
 
-  if(activeFilters.length === 0){
-    filtersSubText.textContent = "Showing all slots";
-  }else{
-    filtersSubText.textContent = `Showing slots containing all selected tags (${activeFilters.length})`;
-  }
+  filtersSubText.textContent =
+    activeFilters.length === 0
+      ? "Showing all slots"
+      : `Showing slots containing all selected tags (${activeFilters.length})`;
 }
 
 /* ===== Analytics ===== */
+function getTotalPossibleSlots(){
+  return DISPLAY_DAYS.length * buildHoursForDay().length;
+}
+
 function calculateAnalytics(){
   const totalPossibleSlots = getTotalPossibleSlots();
-  const slotEntries = Object.entries(appData.slots);
 
-  const filledSlots = slotEntries.length;
-  const emptySlots = totalPossibleSlots - filledSlots;
-  const totalTagAssignments = slotEntries.reduce((sum, [,slot]) => sum + (slot.tagIds?.length || 0), 0);
-
-  const dayMap = {};
-  DISPLAY_DAYS.forEach(day => {
-    dayMap[day] = {
-      total: buildHoursForDay(day).length,
-      filled: 0
-    };
-  });
-
+  let filledSlots = 0;
   const tagUsage = {};
+  const dayMap = {};
+
   getTagsArray().forEach(tag => {
     tagUsage[tag.id] = 0;
   });
 
-  slotEntries.forEach(([id, slot]) => {
-    const [dayName] = id.split("__");
-    if(dayMap[dayName]) dayMap[dayName].filled += 1;
+  DISPLAY_DAYS.forEach(day => {
+    const activeVariant = getActiveVariant(day);
+    const slots = activeVariant.slots || {};
+    const entries = Object.entries(slots);
 
-    (slot.tagIds || []).forEach(tagId => {
-      if(tagUsage[tagId] == null) tagUsage[tagId] = 0;
-      tagUsage[tagId] += 1;
+    dayMap[day] = {
+      total: buildHoursForDay().length,
+      filled: entries.length
+    };
+
+    filledSlots += entries.length;
+
+    entries.forEach(([, slot]) => {
+      (slot.tagIds || []).forEach(tagId => {
+        if(tagUsage[tagId] == null) tagUsage[tagId] = 0;
+        tagUsage[tagId] += 1;
+      });
     });
   });
+
+  const emptySlots = totalPossibleSlots - filledSlots;
 
   let busiestDay = "—";
   let busiestCount = -1;
@@ -485,13 +681,10 @@ function calculateAnalytics(){
     totalPossibleSlots,
     filledSlots,
     emptySlots,
-    totalTagAssignments,
     busiestDay,
-    busiestCount,
     mostUsedTagName,
-    mostUsedTagCount,
-    dayMap,
-    tagUsage
+    tagUsage,
+    dayMap
   };
 }
 
@@ -500,14 +693,14 @@ function renderAnalytics(){
 
   statsGrid.innerHTML = "";
 
-  const statCards = [
+  const cards = [
     { k: "Filled Slots", v: `${data.filledSlots}` },
     { k: "Empty Slots", v: `${data.emptySlots}` },
     { k: "Most Used Tag", v: data.mostUsedTagName },
     { k: "Busiest Day", v: data.busiestDay }
   ];
 
-  statCards.forEach(item => {
+  cards.forEach(item => {
     const card = document.createElement("div");
     card.className = "stat";
 
@@ -530,9 +723,9 @@ function renderAnalytics(){
 
 function renderTagBreakdown(data){
   tagBreakdown.innerHTML = "";
-
   const tags = getTagsArray();
-  if(tags.length === 0){
+
+  if(!tags.length){
     tagBreakdown.innerHTML = `<div class="empty-manager">No tags created yet</div>`;
     return;
   }
@@ -547,11 +740,14 @@ function renderTagBreakdown(data){
 
     const label = document.createElement("div");
     label.className = "breakdown-label";
+
     const dot = document.createElement("span");
     dot.className = "breakdown-dot";
     dot.style.background = tag.color;
+
     const text = document.createElement("span");
     text.textContent = tag.name;
+
     label.appendChild(dot);
     label.appendChild(text);
 
@@ -585,13 +781,14 @@ function renderDayBreakdown(data){
   DISPLAY_DAYS.forEach(day => {
     const filled = data.dayMap[day].filled;
     const total = data.dayMap[day].total;
+    const activeVariant = getActiveVariant(day);
 
     const row = document.createElement("div");
     row.className = "breakdown-row";
 
     const label = document.createElement("div");
     label.className = "breakdown-label";
-    label.textContent = day;
+    label.textContent = `${day} (${activeVariant.name})`;
 
     const bar = document.createElement("div");
     bar.className = "bar";
@@ -617,7 +814,6 @@ function renderDayBreakdown(data){
 
 /* ===== Timetable ===== */
 function renderTimetable(){
-  if(!timetable) return;
   timetable.innerHTML = "";
 
   const now = new Date();
@@ -631,6 +827,7 @@ function renderTimetable(){
     const head = document.createElement("div");
     head.className = "day-head";
 
+    const left = document.createElement("div");
     const title = document.createElement("div");
     title.className = "day-title";
     title.textContent = dayName;
@@ -639,15 +836,42 @@ function renderTimetable(){
     sub.className = "day-sub";
     sub.textContent = "12 AM — 11 PM";
 
-    head.appendChild(title);
-    head.appendChild(sub);
+    left.appendChild(title);
+    left.appendChild(sub);
+
+    const controls = document.createElement("div");
+    controls.className = "day-controls";
+
+    const select = document.createElement("select");
+    select.className = "variant-select";
+
+    getVariantsArray(dayName).forEach(variant => {
+      const option = document.createElement("option");
+      option.value = variant.id;
+      option.textContent = variant.name;
+      if(variant.id === getActiveVariantId(dayName)) option.selected = true;
+      select.appendChild(option);
+    });
+
+    select.addEventListener("change", () => {
+      switchActiveVariant(dayName, select.value);
+    });
+
+    const manageBtn = document.createElement("button");
+    manageBtn.className = "btn btn-ghost";
+    manageBtn.textContent = "Variants";
+    manageBtn.addEventListener("click", () => openVariantManager(dayName));
+
+    controls.appendChild(select);
+    controls.appendChild(manageBtn);
+
+    head.appendChild(left);
+    head.appendChild(controls);
 
     const grid = document.createElement("div");
     grid.className = "slots";
 
-    const hours = buildHoursForDay(dayName);
-
-    hours.forEach(hour => {
+    buildHoursForDay().forEach(hour => {
       const data = getSlotData(dayName, hour);
       if(!isVisibleByFilter(data)) return;
 
@@ -710,8 +934,8 @@ function renderTimetable(){
 
       slot.appendChild(colorsBar);
       slot.appendChild(content);
-
       slot.addEventListener("click", () => openModal(dayName, hour));
+
       grid.appendChild(slot);
     });
 
@@ -723,7 +947,7 @@ function renderTimetable(){
   });
 }
 
-/* ===== Slot Modal ===== */
+/* ===== Slot modal ===== */
 function openModal(dayName, hour){
   activeDay = dayName;
   activeHour = hour;
@@ -731,7 +955,9 @@ function openModal(dayName, hour){
   const data = getSlotData(dayName, hour);
   modalSelectedTagIds = [...data.tagIds];
 
-  modalMeta.textContent = `${dayName} • ${hourToLabel(hour)}`;
+  const variant = getActiveVariant(dayName);
+  modalMeta.textContent = `${dayName} • ${variant.name} • ${hourToLabel(hour)}`;
+
   titleInput.value = data.title || "";
   notesInput.value = data.notes || "";
   newTagNameInput.value = "";
@@ -739,7 +965,6 @@ function openModal(dayName, hour){
 
   renderAvailableTags();
   renderSelectedTagsPreview();
-
   overlay.classList.remove("hidden");
 }
 
@@ -753,10 +978,9 @@ function closeModal(){
 }
 
 function renderAvailableTags(){
-  if(!availableTagsEl) return;
   availableTagsEl.innerHTML = "";
-
   const tags = getTagsArray();
+
   if(!tags.length){
     availableTagsEl.innerHTML = `<div class="empty-preview">No tags created yet</div>`;
     return;
@@ -781,7 +1005,6 @@ function renderAvailableTags(){
       }else{
         modalSelectedTagIds.push(tag.id);
       }
-
       modalSelectedTagIds = uniqueArray(modalSelectedTagIds);
       renderAvailableTags();
       renderSelectedTagsPreview();
@@ -792,9 +1015,8 @@ function renderAvailableTags(){
 }
 
 function renderSelectedTagsPreview(){
-  if(!selectedTagsPreview) return;
-
   const tags = getTagObjectsFromIds(modalSelectedTagIds);
+
   if(!tags.length){
     selectedTagsPreview.classList.add("empty-preview");
     selectedTagsPreview.textContent = "No tags selected";
@@ -841,7 +1063,7 @@ function addTagFromModal(){
   renderAnalytics();
 }
 
-/* ===== Tag Manager ===== */
+/* ===== Tag manager ===== */
 function openTagManager(){
   renderTagManager();
   tagManagerOverlay.classList.remove("hidden");
@@ -929,7 +1151,69 @@ function renderTagManager(){
   });
 }
 
-/* ===== Main Render ===== */
+/* ===== Variant manager ===== */
+function openVariantManager(dayName){
+  variantManageDay = dayName;
+  newVariantNameInput.value = "";
+  const activeVariant = getActiveVariant(dayName);
+  variantModalMeta.textContent = `${dayName} • Current Variant: ${activeVariant.name}`;
+  variantOverlay.classList.remove("hidden");
+}
+
+function closeVariantManager(){
+  variantOverlay.classList.add("hidden");
+  variantManageDay = null;
+  newVariantNameInput.value = "";
+}
+
+function createVariantFromCurrent(){
+  if(!variantManageDay) return;
+  const name = normalizeTagName(newVariantNameInput.value);
+  if(!name){
+    alert("Enter a variant name.");
+    return;
+  }
+  const result = createVariantForDay(variantManageDay, name);
+  if(!result.ok){
+    alert(result.message);
+    return;
+  }
+  render();
+  openVariantManager(variantManageDay);
+}
+
+function renameCurrentVariantFromModal(){
+  if(!variantManageDay) return;
+  const name = normalizeTagName(newVariantNameInput.value);
+  if(!name){
+    alert("Enter a new variant name.");
+    return;
+  }
+  const result = renameCurrentVariant(variantManageDay, name);
+  if(!result.ok){
+    alert(result.message);
+    return;
+  }
+  render();
+  openVariantManager(variantManageDay);
+}
+
+function deleteCurrentVariantFromModal(){
+  if(!variantManageDay) return;
+  const activeVariant = getActiveVariant(variantManageDay);
+  const ok = confirm(`Delete variant "${activeVariant.name}" for ${variantManageDay}?`);
+  if(!ok) return;
+
+  const result = deleteCurrentVariant(variantManageDay);
+  if(!result.ok){
+    alert(result.message);
+    return;
+  }
+  render();
+  openVariantManager(variantManageDay);
+}
+
+/* ===== Main render ===== */
 function render(){
   renderFilters();
   renderAnalytics();
@@ -970,19 +1254,33 @@ btnDelete?.addEventListener("click", () => {
   closeModal();
 });
 
-document.getElementById("btnClearAll")?.addEventListener("click", () => {
-  localStorage.removeItem(STORAGE_KEY_V3);
-  localStorage.removeItem(LEGACY_KEY_V2);
-  appData = { tags: {}, slots: {} };
-  activeFilters = [];
-  render();
-});
-
 btnManageTags?.addEventListener("click", openTagManager);
 btnCloseTagManager?.addEventListener("click", closeTagManager);
 btnCloseTagManager2?.addEventListener("click", closeTagManager);
 tagManagerOverlay?.addEventListener("click", (e) => {
   if(e.target === tagManagerOverlay) closeTagManager();
+});
+
+btnCloseVariantModal?.addEventListener("click", closeVariantManager);
+btnCloseVariantModal2?.addEventListener("click", closeVariantManager);
+variantOverlay?.addEventListener("click", (e) => {
+  if(e.target === variantOverlay) closeVariantManager();
+});
+
+btnCreateVariant?.addEventListener("click", createVariantFromCurrent);
+btnRenameVariant?.addEventListener("click", renameCurrentVariantFromModal);
+btnDeleteVariant?.addEventListener("click", deleteCurrentVariantFromModal);
+
+document.getElementById("btnClearAll")?.addEventListener("click", () => {
+  localStorage.removeItem(STORAGE_KEY_V4);
+  localStorage.removeItem(LEGACY_KEY_V3);
+  localStorage.removeItem(LEGACY_KEY_V2);
+  appData = {
+    tags: {},
+    dayVariants: getDefaultVariantsState()
+  };
+  activeFilters = [];
+  render();
 });
 
 /* ===== Boot ===== */
