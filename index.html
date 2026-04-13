@@ -28,9 +28,21 @@
 
         <div class="actions">
           <button class="btn btn-ghost" id="btnManageTags">Manage Tags</button>
+          <button class="btn btn-ghost" id="btnManagePresets">Week Modes</button>
           <button class="btn btn-ghost" id="btnClearAll">Clear All</button>
         </div>
       </header>
+
+      <section class="preset-bar">
+        <div class="preset-bar-left">
+          <div class="preset-title">Weekly Preset Mode</div>
+          <div class="preset-sub" id="presetSubText">Switch the whole week at once</div>
+        </div>
+        <div class="preset-bar-right">
+          <select id="presetSelect" class="preset-select"></select>
+          <button class="btn btn-ghost" id="btnCreatePreset">Save Current as New</button>
+        </div>
+      </section>
 
       <div class="filters-wrap">
         <div class="filters-head">
@@ -44,7 +56,7 @@
         <div class="card">
           <div class="card-title">Weekly Analytics</div>
           <div class="stats" id="statsGrid"></div>
-          <div class="hint">Each slot counts as 1 hour.</div>
+          <div class="hint">Each slot counts as 1 hour. Locked slots are protected from mass copy/fill.</div>
         </div>
 
         <div class="card">
@@ -81,6 +93,11 @@
         <label class="field">
           <span>Notes (optional)</span>
           <textarea id="slotNotes" rows="3" placeholder="Short notes…" maxlength="140"></textarea>
+        </label>
+
+        <label class="field checkbox-field">
+          <input id="slotLocked" type="checkbox" />
+          <span>Lock this slot</span>
         </label>
 
         <div class="field">
@@ -160,24 +177,56 @@
 
       <div class="modal-body">
         <label class="field">
-          <span>New Variant Name</span>
+          <span>Variant Name</span>
           <input id="newVariantName" type="text" placeholder="e.g., Holiday Tuesday / Exam Tuesday" maxlength="40" />
         </label>
 
         <div class="variant-actions">
-          <button class="btn btn-ghost" id="btnCreateVariant">Create from Current</button>
           <button class="btn btn-ghost" id="btnRenameVariant">Rename Current</button>
           <button class="btn btn-danger" id="btnDeleteVariant">Delete Current</button>
         </div>
 
         <div class="mini-hint">
-          Default variant cannot be deleted. New variants are copied from the currently active schedule of that day.
+          Default variant cannot be deleted. Use the Duplicate button on the day card to create a new copy quickly.
         </div>
       </div>
 
       <div class="modal-foot">
         <div class="spacer"></div>
         <button class="btn btn-ghost" id="btnCloseVariantModal2">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Week Preset Modal -->
+  <div id="presetOverlay" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-head">
+        <div class="modal-title">Manage Week Presets</div>
+        <button class="icon-btn" id="btnClosePresetModal" aria-label="Close">✕</button>
+      </div>
+
+      <div class="modal-meta" id="presetModalMeta">Save and manage full-week variant combinations.</div>
+
+      <div class="modal-body">
+        <label class="field">
+          <span>Preset Name</span>
+          <input id="presetNameInput" type="text" placeholder="e.g., Normal Week / Exam Week / Holiday Week" maxlength="40" />
+        </label>
+
+        <div class="variant-actions">
+          <button class="btn btn-ghost" id="btnRenamePreset">Rename Current</button>
+          <button class="btn btn-danger" id="btnDeletePreset">Delete Current</button>
+        </div>
+
+        <div class="mini-hint">
+          "Save Current as New" creates a new preset from the currently active variants of all seven days.
+        </div>
+      </div>
+
+      <div class="modal-foot">
+        <div class="spacer"></div>
+        <button class="btn btn-ghost" id="btnClosePresetModal2">Close</button>
       </div>
     </div>
   </div>

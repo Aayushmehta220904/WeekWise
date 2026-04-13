@@ -8,14 +8,20 @@
    - recurring fill
    - weekly analytics
    - per-day variants
+   - duplicate variant on day card
+   - copy whole day to another day
+   - lock slots
+   - weekly preset modes
    =========================== */
 
-const STORAGE_KEY_V4 = "WEEKWISE_DATA_V4";
+const STORAGE_KEY_V5 = "WEEKWISE_DATA_V5";
+const LEGACY_KEY_V4 = "WEEKWISE_DATA_V4";
 const LEGACY_KEY_V3 = "WEEKWISE_DATA_V3";
 const LEGACY_KEY_V2 = "WEEKWISE_SLOTS_V2";
 
 const DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const DISPLAY_DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+const DEFAULT_PRESET_ID = "normal-week";
 
 const LEGACY_TYPE_MAP = {
   study: { name: "Study", color: "#baf3c0" },
@@ -60,7 +66,8 @@ function defaultSlot(){
   return {
     title: "",
     notes: "",
-    tagIds: []
+    tagIds: [],
+    locked: false
   };
 }
 
@@ -75,6 +82,10 @@ function generateTagId(name){
 
 function slugifyVariant(name){
   return normalizeTagKey(name).replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || `variant-${Date.now()}`;
+}
+
+function slugifyPreset(name){
+  return normalizeTagKey(name).replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || `preset-${Date.now()}`;
 }
 
 function getDefaultVariantsState(){
@@ -94,12 +105,108 @@ function getDefaultVariantsState(){
   return dayVariants;
 }
 
+function getDefaultPresetsState(){
+  const dayVariantMap = {};
+  DISPLAY_DAYS.forEach(day => {
+    dayVariantMap[day] = "default";
+  });
+
+  return {
+    activePresetId: DEFAULT_PRESET_ID,
+    presets: {
+      [DEFAULT_PRESET_ID]: {
+        id: DEFAULT_PRESET_ID,
+        name: "Normal Week",
+        dayVariantMap
+      }
+    }
+  };
+}
+
+function normalizeSlot(slot){
+  return {
+    title: String(slot?.title || "").trim(),
+    notes: String(slot?.notes || "").trim(),
+    tagIds: Array.isArray(slot?.tagIds) ? uniqueArray(slot.tagIds) : [],
+    locked: !!slot?.locked
+  };
+}
+
+function normalizeAppData(app){
+  const normalized = {
+    tags: app?.tags && typeof app.tags === "object" ? app.tags : {},
+    dayVariants: app?.dayVariants && typeof app.dayVariants === "object" ? app.dayVariants : getDefaultVariantsState(),
+    activePresetId: app?.activePresetId ?? DEFAULT_PRESET_ID,
+    presets: app?.presets && typeof app.presets === "object" ? app.presets : getDefaultPresetsState().presets
+  };
+
+  DISPLAY_DAYS.forEach(day => {
+    if(!normalized.dayVariants[day]){
+      normalized.dayVariants[day] = {
+        activeVariantId: "default",
+        variants: {
+          default: {
+            id: "default",
+            name: "Default",
+            slots: {}
+          }
+        }
+      };
+    }
+
+    const state = normalized.dayVariants[day];
+    if(!state.variants || typeof state.variants !== "object"){
+      state.variants = {};
+    }
+    if(!state.variants.default){
+      state.variants.default = {
+        id: "default",
+        name: "Default",
+        slots: {}
+      };
+    }
+    if(!state.activeVariantId || !state.variants[state.activeVariantId]){
+      state.activeVariantId = "default";
+    }
+
+    Object.values(state.variants).forEach(variant => {
+      if(!variant.slots || typeof variant.slots !== "object"){
+        variant.slots = {};
+      }
+      Object.keys(variant.slots).forEach(hourKey => {
+        variant.slots[hourKey] = normalizeSlot(variant.slots[hourKey]);
+        if(
+          !variant.slots[hourKey].title &&
+          !variant.slots[hourKey].notes &&
+          variant.slots[hourKey].tagIds.length === 0 &&
+          !variant.slots[hourKey].locked
+        ){
+          delete variant.slots[hourKey];
+        }
+      });
+    });
+  });
+
+  if(!normalized.presets || Object.keys(normalized.presets).length === 0){
+    const fallback = getDefaultPresetsState();
+    normalized.presets = fallback.presets;
+    normalized.activePresetId = fallback.activePresetId;
+  }
+
+  if(normalized.activePresetId !== null && !normalized.presets[normalized.activePresetId]){
+    normalized.activePresetId = null;
+  }
+
+  return normalized;
+}
+
 /* ===== Migration ===== */
 function migrateFromV2(){
   const raw = localStorage.getItem(LEGACY_KEY_V2);
   const app = {
     tags: {},
-    dayVariants: getDefaultVariantsState()
+    dayVariants: getDefaultVariantsState(),
+    ...getDefaultPresetsState()
   };
 
   if(!raw) return app;
@@ -137,12 +244,8 @@ function migrateFromV2(){
       slot.tagIds.push(tagId);
     }
 
-    if(slot.title || slot.notes || slot.tagIds.length){
-      app.dayVariants[dayName].variants.default.slots[slotHourKey(hour)] = {
-        title: slot.title,
-        notes: slot.notes,
-        tagIds: uniqueArray(slot.tagIds)
-      };
+    if(slot.title || slot.notes || slot.tagIds.length || slot.locked){
+      app.dayVariants[dayName].variants.default.slots[slotHourKey(hour)] = normalizeSlot(slot);
     }
   });
 
@@ -157,24 +260,19 @@ function migrateFromV3(){
     const parsed = JSON.parse(raw);
     const app = {
       tags: parsed.tags && typeof parsed.tags === "object" ? parsed.tags : {},
-      dayVariants: getDefaultVariantsState()
+      dayVariants: getDefaultVariantsState(),
+      ...getDefaultPresetsState()
     };
 
     const slots = parsed.slots && typeof parsed.slots === "object" ? parsed.slots : {};
-
     Object.entries(slots).forEach(([id, slot]) => {
       const [dayName, hourStr] = id.split("__");
       const hour = Number(hourStr);
 
       if(!app.dayVariants[dayName] || Number.isNaN(hour)) return;
 
-      const cleanSlot = {
-        title: String(slot.title || "").trim(),
-        notes: String(slot.notes || "").trim(),
-        tagIds: Array.isArray(slot.tagIds) ? uniqueArray(slot.tagIds) : []
-      };
-
-      if(cleanSlot.title || cleanSlot.notes || cleanSlot.tagIds.length){
+      const cleanSlot = normalizeSlot(slot);
+      if(cleanSlot.title || cleanSlot.notes || cleanSlot.tagIds.length || cleanSlot.locked){
         app.dayVariants[dayName].variants.default.slots[slotHourKey(hour)] = cleanSlot;
       }
     });
@@ -185,30 +283,55 @@ function migrateFromV3(){
   }
 }
 
+function migrateFromV4(){
+  const raw = localStorage.getItem(LEGACY_KEY_V4);
+  if(!raw) return null;
+
+  try{
+    const parsed = JSON.parse(raw);
+    const app = normalizeAppData({
+      tags: parsed.tags,
+      dayVariants: parsed.dayVariants,
+      ...getDefaultPresetsState()
+    });
+
+    DISPLAY_DAYS.forEach(day => {
+      app.presets[DEFAULT_PRESET_ID].dayVariantMap[day] = app.dayVariants[day].activeVariantId || "default";
+    });
+
+    return app;
+  }catch{
+    return null;
+  }
+}
+
 function loadData(){
-  const raw = localStorage.getItem(STORAGE_KEY_V4);
+  const raw = localStorage.getItem(STORAGE_KEY_V5);
   if(raw){
     try{
-      const parsed = JSON.parse(raw);
-      if(parsed && typeof parsed === "object" && parsed.dayVariants){
-        return parsed;
-      }
+      return normalizeAppData(JSON.parse(raw));
     }catch{}
+  }
+
+  const migratedV4 = migrateFromV4();
+  if(migratedV4){
+    localStorage.setItem(STORAGE_KEY_V5, JSON.stringify(migratedV4));
+    return migratedV4;
   }
 
   const migratedV3 = migrateFromV3();
   if(migratedV3){
-    localStorage.setItem(STORAGE_KEY_V4, JSON.stringify(migratedV3));
+    localStorage.setItem(STORAGE_KEY_V5, JSON.stringify(migratedV3));
     return migratedV3;
   }
 
   const migratedV2 = migrateFromV2();
-  localStorage.setItem(STORAGE_KEY_V4, JSON.stringify(migratedV2));
+  localStorage.setItem(STORAGE_KEY_V5, JSON.stringify(migratedV2));
   return migratedV2;
 }
 
 function saveData(){
-  localStorage.setItem(STORAGE_KEY_V4, JSON.stringify(appData));
+  localStorage.setItem(STORAGE_KEY_V5, JSON.stringify(appData));
 }
 
 let appData = loadData();
@@ -226,6 +349,11 @@ const statsGrid = document.getElementById("statsGrid");
 const tagBreakdown = document.getElementById("tagBreakdown");
 const dayBreakdown = document.getElementById("dayBreakdown");
 
+const presetSelect = document.getElementById("presetSelect");
+const btnCreatePreset = document.getElementById("btnCreatePreset");
+const btnManagePresets = document.getElementById("btnManagePresets");
+const presetSubText = document.getElementById("presetSubText");
+
 const overlay = document.getElementById("modalOverlay");
 const btnClose = document.getElementById("btnCloseModal");
 const btnCancel = document.getElementById("btnCancel");
@@ -236,6 +364,7 @@ const btnAddTag = document.getElementById("btnAddTag");
 const modalMeta = document.getElementById("modalMeta");
 const titleInput = document.getElementById("slotTitle");
 const notesInput = document.getElementById("slotNotes");
+const slotLockedInput = document.getElementById("slotLocked");
 const availableTagsEl = document.getElementById("availableTags");
 const selectedTagsPreview = document.getElementById("selectedTagsPreview");
 const newTagNameInput = document.getElementById("newTagName");
@@ -253,9 +382,15 @@ const btnCloseVariantModal = document.getElementById("btnCloseVariantModal");
 const btnCloseVariantModal2 = document.getElementById("btnCloseVariantModal2");
 const variantModalMeta = document.getElementById("variantModalMeta");
 const newVariantNameInput = document.getElementById("newVariantName");
-const btnCreateVariant = document.getElementById("btnCreateVariant");
 const btnRenameVariant = document.getElementById("btnRenameVariant");
 const btnDeleteVariant = document.getElementById("btnDeleteVariant");
+
+const presetOverlay = document.getElementById("presetOverlay");
+const btnClosePresetModal = document.getElementById("btnClosePresetModal");
+const btnClosePresetModal2 = document.getElementById("btnClosePresetModal2");
+const presetNameInput = document.getElementById("presetNameInput");
+const btnRenamePreset = document.getElementById("btnRenamePreset");
+const btnDeletePreset = document.getElementById("btnDeletePreset");
 
 let activeDay = null;
 let activeHour = null;
@@ -355,11 +490,13 @@ function deleteTagGlobally(tagId){
     const state = appData.dayVariants[day];
     Object.values(state.variants).forEach(variant => {
       Object.keys(variant.slots).forEach(hourKey => {
-        const slot = variant.slots[hourKey];
-        slot.tagIds = (slot.tagIds || []).filter(id => id !== tagId);
+        const slot = normalizeSlot(variant.slots[hourKey]);
+        slot.tagIds = slot.tagIds.filter(id => id !== tagId);
 
-        if(!slot.title && !slot.notes && slot.tagIds.length === 0){
+        if(!slot.title && !slot.notes && slot.tagIds.length === 0 && !slot.locked){
           delete variant.slots[hourKey];
+        }else{
+          variant.slots[hourKey] = slot;
         }
       });
     });
@@ -404,10 +541,13 @@ function getVariantsArray(dayName){
   return Object.values(state.variants);
 }
 
-function switchActiveVariant(dayName, variantId){
+function switchActiveVariant(dayName, variantId, source = "manual"){
   const state = getDayState(dayName);
   if(!state.variants[variantId]) return;
   state.activeVariantId = variantId;
+  if(source === "manual"){
+    appData.activePresetId = null;
+  }
   saveData();
   render();
 }
@@ -439,6 +579,7 @@ function createVariantForDay(dayName, variantName){
     slots: clone(currentVariant.slots || {})
   };
   state.activeVariantId = variantId;
+  appData.activePresetId = null;
   saveData();
   return { ok:true };
 }
@@ -460,6 +601,7 @@ function renameCurrentVariant(dayName, newName){
   }
 
   current.name = cleanName;
+  appData.activePresetId = null;
   saveData();
   return { ok:true };
 }
@@ -473,6 +615,105 @@ function deleteCurrentVariant(dayName){
 
   delete state.variants[currentId];
   state.activeVariantId = "default";
+  appData.activePresetId = null;
+
+  Object.values(appData.presets).forEach(preset => {
+    if(preset.dayVariantMap[dayName] === currentId){
+      preset.dayVariantMap[dayName] = "default";
+    }
+  });
+
+  saveData();
+  return { ok:true };
+}
+
+/* ===== Preset helpers ===== */
+function getPresetsArray(){
+  return Object.values(appData.presets).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function getActivePreset(){
+  if(appData.activePresetId == null) return null;
+  return appData.presets[appData.activePresetId] || null;
+}
+
+function getCurrentWeekVariantMap(){
+  const map = {};
+  DISPLAY_DAYS.forEach(day => {
+    map[day] = getActiveVariantId(day);
+  });
+  return map;
+}
+
+function applyPreset(presetId){
+  const preset = appData.presets[presetId];
+  if(!preset) return;
+
+  DISPLAY_DAYS.forEach(day => {
+    const targetVariantId = preset.dayVariantMap[day];
+    const state = getDayState(day);
+    state.activeVariantId = state.variants[targetVariantId] ? targetVariantId : "default";
+  });
+
+  appData.activePresetId = presetId;
+  saveData();
+  render();
+}
+
+function createPresetFromCurrent(name){
+  const cleanName = normalizeTagName(name);
+  if(!cleanName) return { ok:false, message:"Preset name cannot be empty" };
+
+  const duplicate = getPresetsArray().find(p => normalizeTagKey(p.name) === normalizeTagKey(cleanName));
+  if(duplicate){
+    return { ok:false, message:"Preset name already exists" };
+  }
+
+  let presetId = slugifyPreset(cleanName);
+  let count = 1;
+  while(appData.presets[presetId]){
+    count += 1;
+    presetId = `${slugifyPreset(cleanName)}-${count}`;
+  }
+
+  appData.presets[presetId] = {
+    id: presetId,
+    name: cleanName,
+    dayVariantMap: getCurrentWeekVariantMap()
+  };
+  appData.activePresetId = presetId;
+  saveData();
+  return { ok:true };
+}
+
+function renameCurrentPreset(newName){
+  const preset = getActivePreset();
+  if(!preset) return { ok:false, message:"No saved preset is currently active" };
+
+  const cleanName = normalizeTagName(newName);
+  if(!cleanName) return { ok:false, message:"Preset name cannot be empty" };
+
+  const duplicate = getPresetsArray().find(
+    p => p.id !== preset.id && normalizeTagKey(p.name) === normalizeTagKey(cleanName)
+  );
+  if(duplicate){
+    return { ok:false, message:"Preset name already exists" };
+  }
+
+  preset.name = cleanName;
+  saveData();
+  return { ok:true };
+}
+
+function deleteCurrentPreset(){
+  const preset = getActivePreset();
+  if(!preset) return { ok:false, message:"No saved preset is currently active" };
+  if(preset.id === DEFAULT_PRESET_ID){
+    return { ok:false, message:"Normal Week preset cannot be deleted" };
+  }
+
+  delete appData.presets[preset.id];
+  appData.activePresetId = null;
   saveData();
   return { ok:true };
 }
@@ -484,13 +725,9 @@ function getSlotData(dayName, hour, variantId = null){
   const variant = state.variants[activeId] || state.variants.default;
   const data = variant.slots[slotHourKey(hour)] || defaultSlot();
 
-  return {
-    title: String(data.title || ""),
-    notes: String(data.notes || ""),
-    tagIds: Array.isArray(data.tagIds)
-      ? uniqueArray(data.tagIds).filter(id => !!appData.tags[id])
-      : []
-  };
+  const clean = normalizeSlot(data);
+  clean.tagIds = clean.tagIds.filter(id => !!appData.tags[id]);
+  return clean;
 }
 
 function setSlotForDayVariant(dayName, variantId, hour, payload){
@@ -498,19 +735,21 @@ function setSlotForDayVariant(dayName, variantId, hour, payload){
   const variant = state.variants[variantId];
   if(!variant) return;
 
-  const cleanPayload = {
-    title: String(payload.title || "").trim(),
-    notes: String(payload.notes || "").trim(),
-    tagIds: uniqueArray(Array.isArray(payload.tagIds) ? payload.tagIds : []).filter(tagId => !!appData.tags[tagId])
-  };
+  const cleanPayload = normalizeSlot(payload);
+  cleanPayload.tagIds = cleanPayload.tagIds.filter(tagId => !!appData.tags[tagId]);
 
   const key = slotHourKey(hour);
 
-  if(!cleanPayload.title && !cleanPayload.notes && cleanPayload.tagIds.length === 0){
+  if(!cleanPayload.title && !cleanPayload.notes && cleanPayload.tagIds.length === 0 && !cleanPayload.locked){
     delete variant.slots[key];
   }else{
     variant.slots[key] = cleanPayload;
   }
+}
+
+function isSlotLocked(dayName, variantId, hour){
+  const slot = getSlotData(dayName, hour, variantId);
+  return !!slot.locked;
 }
 
 function getScopeTargetDays(scope){
@@ -531,23 +770,83 @@ function applySlotPayload(scope, payload){
 
   targetDays.forEach(dayName => {
     const variantId = getActiveVariantId(dayName);
+
+    const shouldSkip =
+      scope !== "this_slot" &&
+      !(dayName === activeDay) &&
+      isSlotLocked(dayName, variantId, activeHour);
+
+    if(shouldSkip) return;
+
     setSlotForDayVariant(dayName, variantId, activeHour, payload);
   });
 
+  appData.activePresetId = null;
   saveData();
   render();
 }
 
 function deleteSlotByScope(scope){
   const targetDays = getScopeTargetDays(scope);
+
   targetDays.forEach(dayName => {
     const variantId = getActiveVariantId(dayName);
-    const state = getDayState(dayName);
-    const variant = state.variants[variantId];
-    if(variant){
-      delete variant.slots[slotHourKey(activeHour)];
-    }
+    const variant = getDayState(dayName).variants[variantId];
+    if(!variant) return;
+
+    const shouldSkip =
+      scope !== "this_slot" &&
+      !(dayName === activeDay) &&
+      isSlotLocked(dayName, variantId, activeHour);
+
+    if(shouldSkip) return;
+
+    delete variant.slots[slotHourKey(activeHour)];
   });
+
+  appData.activePresetId = null;
+  saveData();
+  render();
+}
+
+function duplicateCurrentVariantQuick(dayName){
+  const current = getActiveVariant(dayName);
+  const suggestion = current.name === "Default" ? `${dayName} Copy` : `${current.name} Copy`;
+  const name = prompt(`New variant name for ${dayName}:`, suggestion);
+  if(name == null) return;
+
+  const result = createVariantForDay(dayName, name);
+  if(!result.ok){
+    alert(result.message);
+    return;
+  }
+  render();
+}
+
+function copyWholeDayToAnotherDay(sourceDay){
+  const choices = DISPLAY_DAYS.filter(day => day !== sourceDay).join(", ");
+  const targetDayRaw = prompt(`Copy ${sourceDay}'s current active variant into which day?\n\nChoose one of:\n${choices}`);
+  if(targetDayRaw == null) return;
+
+  const targetDay = DISPLAY_DAYS.find(day => day.toLowerCase() === targetDayRaw.trim().toLowerCase());
+  if(!targetDay || targetDay === sourceDay){
+    alert("Invalid target day.");
+    return;
+  }
+
+  const sourceVariant = getActiveVariant(sourceDay);
+  const targetVariantId = getActiveVariantId(targetDay);
+  const targetVariant = getDayState(targetDay).variants[targetVariantId];
+
+  buildHoursForDay().forEach(hour => {
+    const targetLocked = isSlotLocked(targetDay, targetVariantId, hour);
+    if(targetLocked) return;
+
+    const sourceSlot = getSlotData(sourceDay, hour, sourceVariant.id);
+    setSlotForDayVariant(targetDay, targetVariantId, hour, sourceSlot);
+  });
+
+  appData.activePresetId = null;
   saveData();
   render();
 }
@@ -620,6 +919,30 @@ function renderFilters(){
       : `Showing slots containing all selected tags (${activeFilters.length})`;
 }
 
+/* ===== Preset UI ===== */
+function renderPresetSelect(){
+  presetSelect.innerHTML = "";
+
+  const customOption = document.createElement("option");
+  customOption.value = "__custom__";
+  customOption.textContent = "Custom / Unsaved";
+  if(appData.activePresetId == null) customOption.selected = true;
+  presetSelect.appendChild(customOption);
+
+  getPresetsArray().forEach(preset => {
+    const option = document.createElement("option");
+    option.value = preset.id;
+    option.textContent = preset.name;
+    if(appData.activePresetId === preset.id) option.selected = true;
+    presetSelect.appendChild(option);
+  });
+
+  const activePreset = getActivePreset();
+  presetSubText.textContent = activePreset
+    ? `Active preset: ${activePreset.name}`
+    : "Custom current week is active";
+}
+
 /* ===== Analytics ===== */
 function getTotalPossibleSlots(){
   return DISPLAY_DAYS.length * buildHoursForDay().length;
@@ -629,6 +952,7 @@ function calculateAnalytics(){
   const totalPossibleSlots = getTotalPossibleSlots();
 
   let filledSlots = 0;
+  let lockedSlots = 0;
   const tagUsage = {};
   const dayMap = {};
 
@@ -641,19 +965,28 @@ function calculateAnalytics(){
     const slots = activeVariant.slots || {};
     const entries = Object.entries(slots);
 
-    dayMap[day] = {
-      total: buildHoursForDay().length,
-      filled: entries.length
-    };
-
-    filledSlots += entries.length;
+    let dayFilled = 0;
 
     entries.forEach(([, slot]) => {
-      (slot.tagIds || []).forEach(tagId => {
+      const clean = normalizeSlot(slot);
+
+      if(clean.locked) lockedSlots += 1;
+      if(clean.title || clean.notes || clean.tagIds.length || clean.locked){
+        dayFilled += 1;
+      }
+
+      clean.tagIds.forEach(tagId => {
         if(tagUsage[tagId] == null) tagUsage[tagId] = 0;
         tagUsage[tagId] += 1;
       });
     });
+
+    dayMap[day] = {
+      total: buildHoursForDay().length,
+      filled: dayFilled
+    };
+
+    filledSlots += dayFilled;
   });
 
   const emptySlots = totalPossibleSlots - filledSlots;
@@ -683,6 +1016,7 @@ function calculateAnalytics(){
     emptySlots,
     busiestDay,
     mostUsedTagName,
+    lockedSlots,
     tagUsage,
     dayMap
   };
@@ -696,6 +1030,7 @@ function renderAnalytics(){
   const cards = [
     { k: "Filled Slots", v: `${data.filledSlots}` },
     { k: "Empty Slots", v: `${data.emptySlots}` },
+    { k: "Locked Slots", v: `${data.lockedSlots}` },
     { k: "Most Used Tag", v: data.mostUsedTagName },
     { k: "Busiest Day", v: data.busiestDay }
   ];
@@ -854,15 +1189,27 @@ function renderTimetable(){
     });
 
     select.addEventListener("change", () => {
-      switchActiveVariant(dayName, select.value);
+      switchActiveVariant(dayName, select.value, "manual");
     });
+
+    const duplicateBtn = document.createElement("button");
+    duplicateBtn.className = "btn btn-ghost";
+    duplicateBtn.textContent = "Duplicate";
+    duplicateBtn.addEventListener("click", () => duplicateCurrentVariantQuick(dayName));
+
+    const copyDayBtn = document.createElement("button");
+    copyDayBtn.className = "btn btn-ghost";
+    copyDayBtn.textContent = "Copy Day";
+    copyDayBtn.addEventListener("click", () => copyWholeDayToAnotherDay(dayName));
 
     const manageBtn = document.createElement("button");
     manageBtn.className = "btn btn-ghost";
-    manageBtn.textContent = "Variants";
+    manageBtn.textContent = "Manage";
     manageBtn.addEventListener("click", () => openVariantManager(dayName));
 
     controls.appendChild(select);
+    controls.appendChild(duplicateBtn);
+    controls.appendChild(copyDayBtn);
     controls.appendChild(manageBtn);
 
     head.appendChild(left);
@@ -881,6 +1228,7 @@ function renderTimetable(){
       slot.className = "slot";
       if(tagObjects.length) slot.classList.add("has-tags");
       else slot.classList.add("empty");
+      if(data.locked) slot.classList.add("locked-slot");
 
       if(dayName === currentDayName && hour === currentHour){
         slot.classList.add("now");
@@ -893,19 +1241,29 @@ function renderTimetable(){
       const content = document.createElement("div");
       content.className = "slot-content";
 
+      const timeRow = document.createElement("div");
+      timeRow.className = "slot-time-row";
+
       const time = document.createElement("div");
       time.className = "slot-time";
       time.textContent = hourToLabel(hour);
 
+      const lock = document.createElement("div");
+      lock.className = "slot-lock";
+      lock.textContent = data.locked ? "🔒" : "";
+
+      timeRow.appendChild(time);
+      timeRow.appendChild(lock);
+
       const stitle = document.createElement("div");
       stitle.className = "slot-title";
-      stitle.textContent = data.title ? data.title : (tagObjects.length ? "—" : "Tap to add");
+      stitle.textContent = data.title ? data.title : (tagObjects.length || data.locked ? "—" : "Tap to add");
 
       const note = document.createElement("div");
       note.className = "slot-note";
       note.textContent = data.notes ? data.notes : "";
 
-      content.appendChild(time);
+      content.appendChild(timeRow);
       content.appendChild(stitle);
       content.appendChild(note);
 
@@ -960,6 +1318,7 @@ function openModal(dayName, hour){
 
   titleInput.value = data.title || "";
   notesInput.value = data.notes || "";
+  slotLockedInput.checked = !!data.locked;
   newTagNameInput.value = "";
   applyScopeSelect.value = "this_slot";
 
@@ -975,6 +1334,7 @@ function closeModal(){
   modalSelectedTagIds = [];
   newTagNameInput.value = "";
   applyScopeSelect.value = "this_slot";
+  slotLockedInput.checked = false;
 }
 
 function renderAvailableTags(){
@@ -1154,7 +1514,7 @@ function renderTagManager(){
 /* ===== Variant manager ===== */
 function openVariantManager(dayName){
   variantManageDay = dayName;
-  newVariantNameInput.value = "";
+  newVariantNameInput.value = getActiveVariant(dayName).name;
   const activeVariant = getActiveVariant(dayName);
   variantModalMeta.textContent = `${dayName} • Current Variant: ${activeVariant.name}`;
   variantOverlay.classList.remove("hidden");
@@ -1164,22 +1524,6 @@ function closeVariantManager(){
   variantOverlay.classList.add("hidden");
   variantManageDay = null;
   newVariantNameInput.value = "";
-}
-
-function createVariantFromCurrent(){
-  if(!variantManageDay) return;
-  const name = normalizeTagName(newVariantNameInput.value);
-  if(!name){
-    alert("Enter a variant name.");
-    return;
-  }
-  const result = createVariantForDay(variantManageDay, name);
-  if(!result.ok){
-    alert(result.message);
-    return;
-  }
-  render();
-  openVariantManager(variantManageDay);
 }
 
 function renameCurrentVariantFromModal(){
@@ -1213,8 +1557,67 @@ function deleteCurrentVariantFromModal(){
   openVariantManager(variantManageDay);
 }
 
+/* ===== Preset manager ===== */
+function openPresetManager(){
+  const preset = getActivePreset();
+  presetNameInput.value = preset ? preset.name : "";
+  presetOverlay.classList.remove("hidden");
+}
+
+function closePresetManager(){
+  presetOverlay.classList.add("hidden");
+  presetNameInput.value = "";
+}
+
+function createPresetFromCurrentPrompt(){
+  const suggestion = "Exam Week";
+  const name = prompt("New preset name:", suggestion);
+  if(name == null) return;
+
+  const result = createPresetFromCurrent(name);
+  if(!result.ok){
+    alert(result.message);
+    return;
+  }
+  render();
+}
+
+function renameCurrentPresetFromModal(){
+  const name = normalizeTagName(presetNameInput.value);
+  if(!name){
+    alert("Enter a preset name.");
+    return;
+  }
+  const result = renameCurrentPreset(name);
+  if(!result.ok){
+    alert(result.message);
+    return;
+  }
+  render();
+  openPresetManager();
+}
+
+function deleteCurrentPresetFromModal(){
+  const preset = getActivePreset();
+  if(!preset){
+    alert("No saved preset is currently active.");
+    return;
+  }
+  const ok = confirm(`Delete preset "${preset.name}"?`);
+  if(!ok) return;
+
+  const result = deleteCurrentPreset();
+  if(!result.ok){
+    alert(result.message);
+    return;
+  }
+  render();
+  openPresetManager();
+}
+
 /* ===== Main render ===== */
 function render(){
+  renderPresetSelect();
   renderFilters();
   renderAnalytics();
   renderTimetable();
@@ -1241,7 +1644,8 @@ btnSave?.addEventListener("click", () => {
   const payload = {
     title: titleInput.value.trim(),
     notes: notesInput.value.trim(),
-    tagIds: modalSelectedTagIds
+    tagIds: modalSelectedTagIds,
+    locked: slotLockedInput.checked
   };
 
   applySlotPayload(applyScopeSelect.value, payload);
@@ -1267,18 +1671,40 @@ variantOverlay?.addEventListener("click", (e) => {
   if(e.target === variantOverlay) closeVariantManager();
 });
 
-btnCreateVariant?.addEventListener("click", createVariantFromCurrent);
 btnRenameVariant?.addEventListener("click", renameCurrentVariantFromModal);
 btnDeleteVariant?.addEventListener("click", deleteCurrentVariantFromModal);
 
+btnManagePresets?.addEventListener("click", openPresetManager);
+btnClosePresetModal?.addEventListener("click", closePresetManager);
+btnClosePresetModal2?.addEventListener("click", closePresetManager);
+presetOverlay?.addEventListener("click", (e) => {
+  if(e.target === presetOverlay) closePresetManager();
+});
+
+btnCreatePreset?.addEventListener("click", createPresetFromCurrentPrompt);
+btnRenamePreset?.addEventListener("click", renameCurrentPresetFromModal);
+btnDeletePreset?.addEventListener("click", deleteCurrentPresetFromModal);
+
+presetSelect?.addEventListener("change", () => {
+  if(presetSelect.value === "__custom__"){
+    appData.activePresetId = null;
+    saveData();
+    render();
+    return;
+  }
+  applyPreset(presetSelect.value);
+});
+
 document.getElementById("btnClearAll")?.addEventListener("click", () => {
-  localStorage.removeItem(STORAGE_KEY_V4);
+  localStorage.removeItem(STORAGE_KEY_V5);
+  localStorage.removeItem(LEGACY_KEY_V4);
   localStorage.removeItem(LEGACY_KEY_V3);
   localStorage.removeItem(LEGACY_KEY_V2);
-  appData = {
+  appData = normalizeAppData({
     tags: {},
-    dayVariants: getDefaultVariantsState()
-  };
+    dayVariants: getDefaultVariantsState(),
+    ...getDefaultPresetsState()
+  });
   activeFilters = [];
   render();
 });
