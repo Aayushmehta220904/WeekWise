@@ -303,80 +303,22 @@ let appData = loadData();
 let activeFilters = [];
 let analyticsOpen = false;
 let commandQuery = "";
+let createModeType = "copy";
 
-let intro;
-let typeEl;
-
-let timetable;
-let tagFilters;
-let filtersSubText;
-
-let statsGrid;
-let tagBreakdown;
-let dayBreakdown;
-
-let presetSelect;
-let btnCreatePreset;
-let presetSubText;
-
-let btnToggleAnalytics;
-let analyticsPanel;
-let analyticsToggleIcon;
-
-let commandSearch;
-let btnClearSearch;
-let searchSummary;
-
-let btnThemeDark;
-let btnThemeLight;
-
-let overlay;
-let btnClose;
-let btnCancel;
-let btnSave;
-let btnDelete;
-let btnAddTag;
-
-let modalMeta;
-let titleInput;
-let notesInput;
-let slotLockedInput;
-let availableTagsEl;
-let selectedTagsPreview;
-let newTagNameInput;
-let newTagColorInput;
-let applyScopeSelect;
-
-let dayManagerOverlay;
-let btnCloseDayManager;
-let btnCloseDayManager2;
-let dayManagerMeta;
-let dayVariantSelect;
-let btnDuplicateVariant;
-let btnRenameVariant;
-let btnDeleteVariant;
-let copyDayTarget;
-let btnCopyDayNow;
-
-let toolsOverlay;
-let btnOpenTools;
-let btnCloseTools;
-let btnCloseTools2;
-let btnOpenTagManagerFromTools;
-let btnOpenPresetManagerFromTools;
-
-let tagManagerOverlay;
-let btnCloseTagManager;
-let btnCloseTagManager2;
-let tagManagerList;
-
-let presetOverlay;
-let btnClosePresetModal;
-let btnClosePresetModal2;
-let presetNameInput;
-let btnRenamePreset;
-let btnDeletePreset;
-
+let intro, typeEl;
+let timetable, tagFilters, filtersSubText;
+let statsGrid, tagBreakdown, dayBreakdown, analyticsMiniStats;
+let presetSelect, btnCreatePreset, btnCreateEmptyPreset, presetSubText;
+let btnToggleAnalytics, analyticsPanel, analyticsToggleIcon;
+let commandSearch, btnClearSearch, searchSummary;
+let btnThemeDark, btnThemeLight;
+let overlay, btnClose, btnCancel, btnSave, btnDelete, btnAddTag;
+let modalMeta, titleInput, notesInput, slotLockedInput, availableTagsEl, selectedTagsPreview, newTagNameInput, newTagColorInput, applyScopeSelect;
+let dayManagerOverlay, btnCloseDayManager, btnCloseDayManager2, dayManagerMeta, dayVariantSelect, btnDuplicateVariant, btnRenameVariant, btnDeleteVariant, copyDayTarget, btnCopyDayNow;
+let toolsOverlay, btnOpenTools, btnCloseTools, btnCloseTools2, btnOpenTagManagerFromTools, btnOpenPresetManagerFromTools, btnOpenCreateModeFromTools;
+let tagManagerOverlay, btnCloseTagManager, btnCloseTagManager2, tagManagerList;
+let presetOverlay, btnClosePresetModal, btnClosePresetModal2, presetNameInput, btnRenamePreset, btnDeletePreset;
+let createModeOverlay, btnCloseCreateMode, btnCancelCreateMode, btnConfirmCreateMode, createModeTitle, createModeSub, createModeHint, createModeNameInput;
 let btnClearAll;
 
 let activeDay = null;
@@ -395,9 +337,11 @@ function initDomRefs(){
   statsGrid = document.getElementById("statsGrid");
   tagBreakdown = document.getElementById("tagBreakdown");
   dayBreakdown = document.getElementById("dayBreakdown");
+  analyticsMiniStats = document.getElementById("analyticsMiniStats");
 
   presetSelect = document.getElementById("presetSelect");
   btnCreatePreset = document.getElementById("btnCreatePreset");
+  btnCreateEmptyPreset = document.getElementById("btnCreateEmptyPreset");
   presetSubText = document.getElementById("presetSubText");
 
   btnToggleAnalytics = document.getElementById("btnToggleAnalytics");
@@ -445,6 +389,7 @@ function initDomRefs(){
   btnCloseTools2 = document.getElementById("btnCloseTools2");
   btnOpenTagManagerFromTools = document.getElementById("btnOpenTagManagerFromTools");
   btnOpenPresetManagerFromTools = document.getElementById("btnOpenPresetManagerFromTools");
+  btnOpenCreateModeFromTools = document.getElementById("btnOpenCreateModeFromTools");
 
   tagManagerOverlay = document.getElementById("tagManagerOverlay");
   btnCloseTagManager = document.getElementById("btnCloseTagManager");
@@ -457,6 +402,15 @@ function initDomRefs(){
   presetNameInput = document.getElementById("presetNameInput");
   btnRenamePreset = document.getElementById("btnRenamePreset");
   btnDeletePreset = document.getElementById("btnDeletePreset");
+
+  createModeOverlay = document.getElementById("createModeOverlay");
+  btnCloseCreateMode = document.getElementById("btnCloseCreateMode");
+  btnCancelCreateMode = document.getElementById("btnCancelCreateMode");
+  btnConfirmCreateMode = document.getElementById("btnConfirmCreateMode");
+  createModeTitle = document.getElementById("createModeTitle");
+  createModeSub = document.getElementById("createModeSub");
+  createModeHint = document.getElementById("createModeHint");
+  createModeNameInput = document.getElementById("createModeNameInput");
 
   btnClearAll = document.getElementById("btnClearAll");
 }
@@ -618,6 +572,15 @@ function getVariantsArray(dayName){
   return Object.values(getDayState(dayName).variants);
 }
 
+function createBlankVariantForDay(dayName, variantName, variantId){
+  const state = getDayState(dayName);
+  state.variants[variantId] = {
+    id: variantId,
+    name: variantName,
+    slots: {}
+  };
+}
+
 function switchActiveVariant(dayName, variantId, source = "manual"){
   const state = getDayState(dayName);
   if(!state.variants[variantId]) return;
@@ -763,6 +726,49 @@ function createPresetFromCurrent(name){
   return { ok:true };
 }
 
+function createEmptyPreset(name){
+  const cleanName = normalizeTagName(name);
+  if(!cleanName) return { ok:false, message:"Mode name cannot be empty" };
+
+  const duplicate = getPresetsArray().find(p => normalizeTagKey(p.name) === normalizeTagKey(cleanName));
+  if(duplicate){
+    return { ok:false, message:"Mode name already exists" };
+  }
+
+  let presetId = slugifyPreset(cleanName);
+  let count = 1;
+  while(appData.presets[presetId]){
+    count += 1;
+    presetId = `${slugifyPreset(cleanName)}-${count}`;
+  }
+
+  const dayVariantMap = {};
+
+  DISPLAY_DAYS.forEach(day => {
+    const state = getDayState(day);
+    let variantId = `${presetId}-${day.toLowerCase()}-empty`;
+    let variantCount = 1;
+
+    while(state.variants[variantId]){
+      variantCount += 1;
+      variantId = `${presetId}-${day.toLowerCase()}-empty-${variantCount}`;
+    }
+
+    createBlankVariantForDay(day, `${cleanName}`, variantId);
+    state.activeVariantId = variantId;
+    dayVariantMap[day] = variantId;
+  });
+
+  appData.presets[presetId] = {
+    id: presetId,
+    name: cleanName,
+    dayVariantMap
+  };
+  appData.activePresetId = presetId;
+  saveData();
+  return { ok:true };
+}
+
 function renameCurrentPreset(newName){
   const preset = getActivePreset();
   if(!preset) return { ok:false, message:"No saved preset is currently active" };
@@ -830,15 +836,9 @@ function isSlotLocked(dayName, variantId, hour){
 }
 
 function getScopeTargetDays(scope){
-  if(scope === "weekdays_same_hour"){
-    return ["Monday","Tuesday","Wednesday","Thursday","Friday"];
-  }
-  if(scope === "weekends_same_hour"){
-    return ["Saturday","Sunday"];
-  }
-  if(scope === "all_days_same_hour"){
-    return [...DISPLAY_DAYS];
-  }
+  if(scope === "weekdays_same_hour") return ["Monday","Tuesday","Wednesday","Thursday","Friday"];
+  if(scope === "weekends_same_hour") return ["Saturday","Sunday"];
+  if(scope === "all_days_same_hour") return [...DISPLAY_DAYS];
   return [activeDay];
 }
 
@@ -943,13 +943,7 @@ function createColorDot(color, className = "tag-color-dot"){
 
 function getSlotSearchText(dayName, hour, slot){
   const tagNames = getTagObjectsFromIds(slot.tagIds).map(tag => tag.name).join(" ");
-  return [
-    dayName,
-    hourToLabel(hour),
-    slot.title,
-    slot.notes,
-    tagNames
-  ].join(" ").toLowerCase();
+  return [dayName, hourToLabel(hour), slot.title, slot.notes, tagNames].join(" ").toLowerCase();
 }
 
 function matchesCommandQuery(dayName, hour, slot){
@@ -1036,7 +1030,6 @@ function getTotalPossibleSlots(){
 
 function calculateAnalytics(){
   const totalPossibleSlots = getTotalPossibleSlots();
-
   let filledSlots = 0;
   let lockedSlots = 0;
   const tagUsage = {};
@@ -1050,16 +1043,13 @@ function calculateAnalytics(){
     const activeVariant = getActiveVariant(day);
     const slots = activeVariant.slots || {};
     const entries = Object.entries(slots);
-
     let dayFilled = 0;
 
     entries.forEach(([, slot]) => {
       const clean = normalizeSlot(slot);
 
       if(clean.locked) lockedSlots += 1;
-      if(clean.title || clean.notes || clean.tagIds.length || clean.locked){
-        dayFilled += 1;
-      }
+      if(clean.title || clean.notes || clean.tagIds.length || clean.locked) dayFilled += 1;
 
       clean.tagIds.forEach(tagId => {
         if(tagUsage[tagId] == null) tagUsage[tagId] = 0;
@@ -1108,10 +1098,40 @@ function calculateAnalytics(){
   };
 }
 
+function renderMiniAnalytics(data){
+  if(!analyticsMiniStats) return;
+  analyticsMiniStats.innerHTML = "";
+
+  const items = [
+    ["Filled", `${data.filledSlots}`],
+    ["Empty", `${data.emptySlots}`],
+    ["Locked", `${data.lockedSlots}`],
+    ["Top Tag", `${data.mostUsedTagName}`]
+  ];
+
+  items.forEach(([k, v]) => {
+    const card = document.createElement("div");
+    card.className = "analytics-mini-card";
+
+    const key = document.createElement("div");
+    key.className = "analytics-mini-k";
+    key.textContent = k;
+
+    const val = document.createElement("div");
+    val.className = "analytics-mini-v";
+    val.textContent = v;
+
+    card.appendChild(key);
+    card.appendChild(val);
+    analyticsMiniStats.appendChild(card);
+  });
+}
+
 function renderAnalytics(){
   if(!statsGrid || !tagBreakdown || !dayBreakdown) return;
 
   const data = calculateAnalytics();
+  renderMiniAnalytics(data);
 
   statsGrid.innerHTML = "";
 
@@ -1198,7 +1218,6 @@ function renderTagBreakdown(data){
 
 function renderDayBreakdown(data){
   dayBreakdown.innerHTML = "";
-
   const maxFilled = Math.max(1, ...DISPLAY_DAYS.map(day => data.dayMap[day].filled));
   const isDark = (document.body.getAttribute("data-theme") || "dark") === "dark";
 
@@ -1220,7 +1239,7 @@ function renderDayBreakdown(data){
     const fill = document.createElement("div");
     fill.className = "bar-fill";
     fill.style.width = `${(filled / maxFilled) * 100}%`;
-    fill.style.background = isDark ? "#7C8CFF" : "#6C7CFA";
+    fill.style.background = isDark ? "#ff8a1f" : "#ff8a1f";
 
     bar.appendChild(fill);
 
@@ -1261,7 +1280,7 @@ function renderTimetable(){
   const currentHour = now.getHours();
   let matchCount = 0;
 
-  DISPLAY_DAYS.forEach((dayName) => {
+  DISPLAY_DAYS.forEach(dayName => {
     const dayWrap = document.createElement("div");
     dayWrap.className = "day" + (dayName === currentDayName ? " current-day" : "");
 
@@ -1315,12 +1334,8 @@ function renderTimetable(){
       slot.className = "slot";
       if(tagObjects.length) slot.classList.add("has-tags");
       if(data.locked) slot.classList.add("locked-slot");
-      if(dayName === currentDayName && hour === currentHour){
-        slot.classList.add("now");
-      }
-      if(!(filterMatch && searchMatch)){
-        slot.classList.add("dimmed");
-      }
+      if(dayName === currentDayName && hour === currentHour) slot.classList.add("now");
+      if(!(filterMatch && searchMatch)) slot.classList.add("dimmed");
 
       const colorsBar = document.createElement("div");
       colorsBar.className = "slot-colors";
@@ -1586,18 +1601,63 @@ function copyDayFromManager(){
   openDayManager(managedDay);
 }
 
-/* Drawers */
-function openTools(){ if(toolsOverlay) toolsOverlay.classList.remove("hidden"); }
-function closeTools(){ if(toolsOverlay) toolsOverlay.classList.add("hidden"); }
+/* Drawers + modals */
+function openTools(){ toolsOverlay?.classList.remove("hidden"); }
+function closeTools(){ toolsOverlay?.classList.add("hidden"); }
 
 function openTagManager(){
   renderTagManager();
-  if(tagManagerOverlay) tagManagerOverlay.classList.remove("hidden");
+  tagManagerOverlay?.classList.remove("hidden");
 }
 function closeTagManager(){
-  if(tagManagerOverlay) tagManagerOverlay.classList.add("hidden");
+  tagManagerOverlay?.classList.add("hidden");
 }
 
+function openCreateModeModal(type){
+  createModeType = type;
+  if(createModeTitle) createModeTitle.textContent = type === "empty" ? "Create Empty Week Mode" : "Save Week Mode";
+  if(createModeSub) createModeSub.textContent = type === "empty"
+    ? "Create a new blank mode inside the app."
+    : "Save the currently active layout as a new mode.";
+  if(createModeHint) createModeHint.textContent = type === "empty"
+    ? "This will create a new empty mode and switch to it."
+    : "This will save the currently active day variants.";
+  if(createModeNameInput) createModeNameInput.value = "";
+  createModeOverlay?.classList.remove("hidden");
+}
+function closeCreateModeModal(){
+  createModeOverlay?.classList.add("hidden");
+  if(createModeNameInput) createModeNameInput.value = "";
+}
+function confirmCreateMode(){
+  const name = normalizeTagName(createModeNameInput?.value);
+  if(!name){
+    alert("Enter a mode name.");
+    return;
+  }
+
+  const result = createModeType === "empty" ? createEmptyPreset(name) : createPresetFromCurrent(name);
+  if(!result.ok){
+    alert(result.message);
+    return;
+  }
+
+  closeCreateModeModal();
+  closeTools();
+  render();
+}
+
+function openPresetManager(){
+  const preset = getActivePreset();
+  if(presetNameInput) presetNameInput.value = preset ? preset.name : "";
+  presetOverlay?.classList.remove("hidden");
+}
+function closePresetManager(){
+  presetOverlay?.classList.add("hidden");
+  if(presetNameInput) presetNameInput.value = "";
+}
+
+/* Tag manager */
 function renderTagManager(){
   if(!tagManagerList) return;
   tagManagerList.innerHTML = "";
@@ -1612,9 +1672,14 @@ function renderTagManager(){
     const row = document.createElement("div");
     row.className = "tag-manager-row";
 
-    const colorInput = document.createElement("input");
-    colorInput.type = "color";
-    colorInput.value = sanitizeColor(tag.color);
+    const editBtn = document.createElement("button");
+    editBtn.className = "btn btn-secondary";
+    editBtn.textContent = "Edit";
+
+    const hiddenColorInput = document.createElement("input");
+    hiddenColorInput.type = "color";
+    hiddenColorInput.className = "hidden-color-input";
+    hiddenColorInput.value = sanitizeColor(tag.color);
 
     const nameInput = document.createElement("input");
     nameInput.type = "text";
@@ -1635,15 +1700,16 @@ function renderTagManager(){
     deleteBtn.textContent = "Delete";
 
     function syncPreview(){
-      preview.style.background = sanitizeColor(colorInput.value);
+      preview.style.background = sanitizeColor(hiddenColorInput.value);
       preview.textContent = normalizeTagName(nameInput.value) || "Tag";
     }
 
-    colorInput.addEventListener("input", syncPreview);
+    editBtn.addEventListener("click", () => hiddenColorInput.click());
+    hiddenColorInput.addEventListener("input", syncPreview);
     nameInput.addEventListener("input", syncPreview);
 
     saveBtn.addEventListener("click", () => {
-      const result = renameOrUpdateTag(tag.id, nameInput.value, colorInput.value);
+      const result = renameOrUpdateTag(tag.id, nameInput.value, hiddenColorInput.value);
       if(!result.ok){
         alert(result.message);
         return;
@@ -1667,37 +1733,18 @@ function renderTagManager(){
       renderSelectedTagsPreview();
     });
 
-    row.appendChild(colorInput);
+    row.appendChild(editBtn);
     row.appendChild(nameInput);
     row.appendChild(preview);
     row.appendChild(saveBtn);
     row.appendChild(deleteBtn);
+    row.appendChild(hiddenColorInput);
 
     tagManagerList.appendChild(row);
   });
 }
 
-function openPresetManager(){
-  const preset = getActivePreset();
-  if(presetNameInput) presetNameInput.value = preset ? preset.name : "";
-  if(presetOverlay) presetOverlay.classList.remove("hidden");
-}
-function closePresetManager(){
-  if(presetOverlay) presetOverlay.classList.add("hidden");
-  if(presetNameInput) presetNameInput.value = "";
-}
-function createPresetFromCurrentPrompt(){
-  const suggestion = "Exam Week";
-  const name = prompt("New week mode name:", suggestion);
-  if(name == null) return;
-
-  const result = createPresetFromCurrent(name);
-  if(!result.ok){
-    alert(result.message);
-    return;
-  }
-  render();
-}
+/* Preset manager actions */
 function renameCurrentPresetFromModal(){
   const name = normalizeTagName(presetNameInput?.value);
   if(!name){
@@ -1712,6 +1759,7 @@ function renameCurrentPresetFromModal(){
   render();
   openPresetManager();
 }
+
 function deleteCurrentPresetFromModal(){
   const preset = getActivePreset();
   if(!preset){
@@ -1868,6 +1916,7 @@ function bindEvents(){
     closeTools();
     openPresetManager();
   });
+  btnOpenCreateModeFromTools?.addEventListener("click", () => openCreateModeModal("copy"));
 
   btnCloseTagManager?.addEventListener("click", closeTagManager);
   btnCloseTagManager2?.addEventListener("click", closeTagManager);
@@ -1875,7 +1924,9 @@ function bindEvents(){
     if(e.target === tagManagerOverlay) closeTagManager();
   });
 
-  btnCreatePreset?.addEventListener("click", createPresetFromCurrentPrompt);
+  btnCreatePreset?.addEventListener("click", () => openCreateModeModal("copy"));
+  btnCreateEmptyPreset?.addEventListener("click", () => openCreateModeModal("empty"));
+
   presetSelect?.addEventListener("change", () => {
     if(presetSelect.value === "__custom__"){
       appData.activePresetId = null;
@@ -1885,6 +1936,7 @@ function bindEvents(){
     }
     applyPreset(presetSelect.value);
   });
+
   btnClosePresetModal?.addEventListener("click", closePresetManager);
   btnClosePresetModal2?.addEventListener("click", closePresetManager);
   presetOverlay?.addEventListener("click", (e) => {
@@ -1892,6 +1944,13 @@ function bindEvents(){
   });
   btnRenamePreset?.addEventListener("click", renameCurrentPresetFromModal);
   btnDeletePreset?.addEventListener("click", deleteCurrentPresetFromModal);
+
+  btnCloseCreateMode?.addEventListener("click", closeCreateModeModal);
+  btnCancelCreateMode?.addEventListener("click", closeCreateModeModal);
+  btnConfirmCreateMode?.addEventListener("click", confirmCreateMode);
+  createModeOverlay?.addEventListener("click", (e) => {
+    if(e.target === createModeOverlay) closeCreateModeModal();
+  });
 
   btnClearAll?.addEventListener("click", () => {
     const ok = confirm("Clear all WeekWise data?");

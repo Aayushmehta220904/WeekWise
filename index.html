@@ -31,8 +31,8 @@
 
       <div class="header-right">
         <div class="theme-toggle" role="tablist" aria-label="Theme switch">
-          <button class="theme-option active" id="btnThemeDark" type="button" data-theme-value="dark">Dark</button>
-          <button class="theme-option" id="btnThemeLight" type="button" data-theme-value="light">Light</button>
+          <button class="theme-option active" id="btnThemeDark" type="button">Dark</button>
+          <button class="theme-option" id="btnThemeLight" type="button">Light</button>
         </div>
 
         <div class="mode-control">
@@ -42,6 +42,7 @@
         </div>
 
         <button class="btn btn-secondary" id="btnCreatePreset">＋ Save As</button>
+        <button class="btn btn-secondary" id="btnCreateEmptyPreset">⊕ Empty Mode</button>
         <button class="btn btn-secondary" id="btnOpenTools">☰ Tools</button>
       </div>
     </header>
@@ -71,6 +72,7 @@
           <div class="analytics-toggle-left">
             <div class="section-eyebrow">Insights</div>
             <div class="section-title-sm">Weekly Analytics</div>
+            <div id="analyticsMiniStats" class="analytics-mini-stats"></div>
           </div>
           <span class="analytics-toggle-icon" id="analyticsToggleIcon">▼</span>
         </button>
@@ -125,7 +127,7 @@
       <div class="drawer-body">
         <div class="form-grid">
           <section class="form-card glass-soft">
-            <div class="form-card-title">📝 Details</div>
+            <div class="form-card-title">Details</div>
 
             <label class="field">
               <span>Title</span>
@@ -139,12 +141,12 @@
 
             <label class="field checkbox-field">
               <input id="slotLocked" type="checkbox" />
-              <span>🔒 Lock this slot</span>
+              <span>Lock this slot</span>
             </label>
           </section>
 
           <section class="form-card glass-soft">
-            <div class="form-card-title">🏷️ Tags</div>
+            <div class="form-card-title">Tags</div>
 
             <div class="field">
               <span>Selected</span>
@@ -162,7 +164,7 @@
               <span>Create New Tag</span>
               <div class="create-tag-row">
                 <input id="newTagName" type="text" placeholder="Tag name" maxlength="24" />
-                <input id="newTagColor" type="color" value="#7C8CFF" />
+                <input id="newTagColor" type="color" value="#ff8a1f" />
                 <button class="btn btn-secondary" id="btnAddTag" type="button">Add</button>
               </div>
               <div class="mini-hint">Existing tag names reuse their saved color automatically.</div>
@@ -171,7 +173,7 @@
         </div>
 
         <section class="form-card compact-card glass-soft">
-          <div class="form-card-title">⚙️ Apply Changes</div>
+          <div class="form-card-title">Apply Changes</div>
           <label class="field">
             <span>Apply To</span>
             <select id="applyScope">
@@ -206,7 +208,7 @@
 
       <div class="drawer-body">
         <section class="form-card glass-soft">
-          <div class="form-card-title">🗂️ Variant</div>
+          <div class="form-card-title">Variant</div>
 
           <label class="field">
             <span>Active Variant</span>
@@ -221,7 +223,7 @@
         </section>
 
         <section class="form-card glass-soft">
-          <div class="form-card-title">📋 Copy Day</div>
+          <div class="form-card-title">Copy Day</div>
 
           <label class="field">
             <span>Copy current active variant to</span>
@@ -253,10 +255,11 @@
 
       <div class="drawer-body">
         <section class="form-card glass-soft">
-          <div class="form-card-title">🧰 Project</div>
+          <div class="form-card-title">Project</div>
           <div class="action-col">
             <button class="btn btn-secondary" id="btnOpenTagManagerFromTools">Manage Tags</button>
             <button class="btn btn-secondary" id="btnOpenPresetManagerFromTools">Manage Week Modes</button>
+            <button class="btn btn-secondary" id="btnOpenCreateModeFromTools">Create New Mode</button>
             <button class="btn btn-danger" id="btnClearAll">Clear All</button>
           </div>
         </section>
@@ -304,7 +307,7 @@
 
       <div class="drawer-body">
         <section class="form-card glass-soft">
-          <div class="form-card-title">🧭 Current Week Mode</div>
+          <div class="form-card-title">Current Week Mode</div>
 
           <label class="field">
             <span>Name</span>
@@ -315,8 +318,6 @@
             <button class="btn btn-secondary" id="btnRenamePreset">Rename</button>
             <button class="btn btn-danger" id="btnDeletePreset">Delete</button>
           </div>
-
-          <div class="mini-hint">“Save As” creates a new week mode from the currently active variants of all days.</div>
         </section>
       </div>
 
@@ -325,6 +326,35 @@
         <button class="btn btn-secondary" id="btnClosePresetModal2">Close</button>
       </div>
     </aside>
+  </div>
+
+  <!-- Create Mode Modal -->
+  <div id="createModeOverlay" class="overlay overlay-center hidden">
+    <div class="modal-box glass-strong">
+      <div class="drawer-head modal-head">
+        <div>
+          <div class="drawer-title" id="createModeTitle">Save Week Mode</div>
+          <div class="drawer-meta" id="createModeSub">Create a saved mode from your current layout.</div>
+        </div>
+        <button class="icon-btn" id="btnCloseCreateMode" aria-label="Close">✕</button>
+      </div>
+
+      <div class="drawer-body">
+        <section class="form-card glass-soft">
+          <label class="field">
+            <span>Mode Name</span>
+            <input id="createModeNameInput" type="text" placeholder="e.g., Exam Week" maxlength="40" />
+          </label>
+          <div class="mini-hint" id="createModeHint">This will save the currently active day variants.</div>
+        </section>
+      </div>
+
+      <div class="drawer-foot">
+        <button class="btn btn-secondary" id="btnCancelCreateMode">Cancel</button>
+        <div class="spacer"></div>
+        <button class="btn btn-primary" id="btnConfirmCreateMode">Create</button>
+      </div>
+    </div>
   </div>
 
   <script src="script.js"></script>
