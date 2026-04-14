@@ -15,7 +15,7 @@
       <div class="typewriter">
         <span id="typeText"></span><span class="caret">|</span>
       </div>
-      <div class="intro-sub">Welcome 🤗</div>
+      <div class="intro-sub">Plan with clarity. Execute with consistency.</div>
     </div>
   </div>
 
@@ -41,9 +41,9 @@
           <select id="presetSelect" class="app-select"></select>
         </div>
 
-        <button class="btn btn-secondary" id="btnCreatePreset">＋ Save As</button>
-        <button class="btn btn-secondary" id="btnCreateEmptyPreset">⊕ Empty Mode</button>
-        <button class="btn btn-secondary" id="btnOpenTools">☰ Tools</button>
+        <button class="btn btn-secondary" id="btnCreatePreset" type="button">＋ Save As</button>
+        <button class="btn btn-secondary" id="btnCreateEmptyPreset" type="button">⊕ Empty Mode</button>
+        <button class="btn btn-secondary" id="btnOpenTools" type="button">☰ Tools</button>
       </div>
     </header>
 
@@ -121,7 +121,7 @@
           <div class="drawer-title">Edit Slot</div>
           <div class="drawer-meta" id="modalMeta"></div>
         </div>
-        <button class="icon-btn" id="btnCloseModal" aria-label="Close">✕</button>
+        <button class="icon-btn" id="btnCloseModal" type="button" aria-label="Close">✕</button>
       </div>
 
       <div class="drawer-body">
@@ -187,10 +187,10 @@
       </div>
 
       <div class="drawer-foot">
-        <button class="btn btn-danger" id="btnDeleteSlot">Delete</button>
+        <button class="btn btn-danger" id="btnDeleteSlot" type="button">Delete</button>
         <div class="spacer"></div>
-        <button class="btn btn-secondary" id="btnCancel">Cancel</button>
-        <button class="btn btn-primary" id="btnSave">Save</button>
+        <button class="btn btn-secondary" id="btnCancel" type="button">Cancel</button>
+        <button class="btn btn-primary" id="btnSave" type="button">Save</button>
       </div>
     </aside>
   </div>
@@ -203,7 +203,7 @@
           <div class="drawer-title">Manage Day</div>
           <div class="drawer-meta" id="dayManagerMeta"></div>
         </div>
-        <button class="icon-btn" id="btnCloseDayManager" aria-label="Close">✕</button>
+        <button class="icon-btn" id="btnCloseDayManager" type="button" aria-label="Close">✕</button>
       </div>
 
       <div class="drawer-body">
@@ -216,9 +216,9 @@
           </label>
 
           <div class="action-row">
-            <button class="btn btn-secondary" id="btnDuplicateVariant">Duplicate</button>
-            <button class="btn btn-secondary" id="btnRenameVariant">Rename</button>
-            <button class="btn btn-danger" id="btnDeleteVariant">Delete</button>
+            <button class="btn btn-secondary" id="btnDuplicateVariant" type="button">Duplicate</button>
+            <button class="btn btn-secondary" id="btnRenameVariant" type="button">Rename</button>
+            <button class="btn btn-danger" id="btnDeleteVariant" type="button">Delete</button>
           </div>
         </section>
 
@@ -230,14 +230,14 @@
             <select id="copyDayTarget"></select>
           </label>
 
-          <button class="btn btn-secondary" id="btnCopyDayNow">Copy To Selected Day</button>
+          <button class="btn btn-secondary" id="btnCopyDayNow" type="button">Copy To Selected Day</button>
           <div class="mini-hint">Locked slots in the target day are not overwritten.</div>
         </section>
       </div>
 
       <div class="drawer-foot">
         <div class="spacer"></div>
-        <button class="btn btn-secondary" id="btnCloseDayManager2">Close</button>
+        <button class="btn btn-secondary" id="btnCloseDayManager2" type="button">Close</button>
       </div>
     </aside>
   </div>
@@ -250,24 +250,24 @@
           <div class="drawer-title">Tools</div>
           <div class="drawer-meta">Advanced management actions</div>
         </div>
-        <button class="icon-btn" id="btnCloseTools" aria-label="Close">✕</button>
+        <button class="icon-btn" id="btnCloseTools" type="button" aria-label="Close">✕</button>
       </div>
 
       <div class="drawer-body">
         <section class="form-card glass-soft">
           <div class="form-card-title">Project</div>
           <div class="action-col">
-            <button class="btn btn-secondary" id="btnOpenTagManagerFromTools">Manage Tags</button>
-            <button class="btn btn-secondary" id="btnOpenPresetManagerFromTools">Manage Week Modes</button>
-            <button class="btn btn-secondary" id="btnOpenCreateModeFromTools">Create New Mode</button>
-            <button class="btn btn-danger" id="btnClearAll">Clear All</button>
+            <button class="btn btn-secondary" id="btnOpenTagManagerFromTools" type="button">Manage Tags</button>
+            <button class="btn btn-secondary" id="btnOpenPresetManagerFromTools" type="button">Manage Week Modes</button>
+            <button class="btn btn-secondary" id="btnOpenCreateModeFromTools" type="button">Create New Mode</button>
+            <button class="btn btn-danger" id="btnClearAll" type="button">Clear All</button>
           </div>
         </section>
       </div>
 
       <div class="drawer-foot">
         <div class="spacer"></div>
-        <button class="btn btn-secondary" id="btnCloseTools2">Close</button>
+        <button class="btn btn-secondary" id="btnCloseTools2" type="button">Close</button>
       </div>
     </aside>
   </div>
@@ -280,7 +280,7 @@
           <div class="drawer-title">Manage Tags</div>
           <div class="drawer-meta">Edit tag names and colors globally, or delete them from the project.</div>
         </div>
-        <button class="icon-btn" id="btnCloseTagManager" aria-label="Close">✕</button>
+        <button class="icon-btn" id="btnCloseTagManager" type="button" aria-label="Close">✕</button>
       </div>
 
       <div class="drawer-body">
@@ -289,7 +289,7 @@
 
       <div class="drawer-foot">
         <div class="spacer"></div>
-        <button class="btn btn-secondary" id="btnCloseTagManager2">Close</button>
+        <button class="btn btn-secondary" id="btnCloseTagManager2" type="button">Close</button>
       </div>
     </aside>
   </div>
@@ -302,7 +302,7 @@
           <div class="drawer-title">Manage Week Modes</div>
           <div class="drawer-meta">Rename or delete the active saved week mode.</div>
         </div>
-        <button class="icon-btn" id="btnClosePresetModal" aria-label="Close">✕</button>
+        <button class="icon-btn" id="btnClosePresetModal" type="button" aria-label="Close">✕</button>
       </div>
 
       <div class="drawer-body">
@@ -315,15 +315,15 @@
           </label>
 
           <div class="action-row">
-            <button class="btn btn-secondary" id="btnRenamePreset">Rename</button>
-            <button class="btn btn-danger" id="btnDeletePreset">Delete</button>
+            <button class="btn btn-secondary" id="btnRenamePreset" type="button">Rename</button>
+            <button class="btn btn-danger" id="btnDeletePreset" type="button">Delete</button>
           </div>
         </section>
       </div>
 
       <div class="drawer-foot">
         <div class="spacer"></div>
-        <button class="btn btn-secondary" id="btnClosePresetModal2">Close</button>
+        <button class="btn btn-secondary" id="btnClosePresetModal2" type="button">Close</button>
       </div>
     </aside>
   </div>
@@ -336,7 +336,7 @@
           <div class="drawer-title" id="createModeTitle">Save Week Mode</div>
           <div class="drawer-meta" id="createModeSub">Create a saved mode from your current layout.</div>
         </div>
-        <button class="icon-btn" id="btnCloseCreateMode" aria-label="Close">✕</button>
+        <button class="icon-btn" id="btnCloseCreateMode" type="button" aria-label="Close">✕</button>
       </div>
 
       <div class="drawer-body">
@@ -350,28 +350,28 @@
       </div>
 
       <div class="drawer-foot">
-        <button class="btn btn-secondary" id="btnCancelCreateMode">Cancel</button>
+        <button class="btn btn-secondary" id="btnCancelCreateMode" type="button">Cancel</button>
         <div class="spacer"></div>
-        <button class="btn btn-primary" id="btnConfirmCreateMode">Create</button>
+        <button class="btn btn-primary" id="btnConfirmCreateMode" type="button">Create</button>
       </div>
     </div>
   </div>
 
   <!-- Confirm Modal -->
   <div id="confirmOverlay" class="overlay overlay-center hidden">
-    <div class="modal-box confirm-box glass-strong">
+    <div class="modal-box glass-strong confirm-modal-box">
       <div class="drawer-head modal-head">
         <div>
-          <div class="drawer-title" id="confirmTitle">Confirm Action</div>
+          <div class="drawer-title" id="confirmTitle">Confirm Delete</div>
           <div class="drawer-meta" id="confirmMessage">Are you sure?</div>
         </div>
-        <button class="icon-btn" id="btnCloseConfirm" aria-label="Close">✕</button>
+        <button class="icon-btn" id="btnCloseConfirm" type="button" aria-label="Close">✕</button>
       </div>
 
       <div class="drawer-foot">
-        <button class="btn btn-secondary" id="btnCancelConfirm">Cancel</button>
+        <button class="btn btn-secondary" id="btnCancelConfirm" type="button">Cancel</button>
         <div class="spacer"></div>
-        <button class="btn btn-danger" id="btnConfirmAction">Delete</button>
+        <button class="btn btn-danger" id="btnOkConfirm" type="button">Delete</button>
       </div>
     </div>
   </div>

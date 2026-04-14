@@ -486,7 +486,7 @@ function updateThemeToggleUI(){
 function openConfirmModal(title, message, onConfirm){
   if(!confirmOverlay) return;
 
-  pendingConfirmAction = onConfirm;
+  pendingConfirmAction = onConfirm || null;
 
   if(confirmTitle) confirmTitle.textContent = title || "Confirm";
   if(confirmMessage) confirmMessage.textContent = message || "Are you sure?";
@@ -494,19 +494,23 @@ function openConfirmModal(title, message, onConfirm){
   confirmOverlay.classList.remove("hidden");
 }
 
-function closeConfirmModal(){
+function closeConfirmModal(clearAction = true){
   confirmOverlay?.classList.add("hidden");
+  if(clearAction){
+    pendingConfirmAction = null;
+  }
 }
 
 function handleConfirmOk(){
   const action = pendingConfirmAction;
-  confirmOverlay?.classList.add("hidden");
+  closeConfirmModal(false);
   pendingConfirmAction = null;
 
   if(typeof action === "function"){
     action();
   }
 }
+
 
 /* Helpers */
 function getTagsArray(){
@@ -1792,21 +1796,25 @@ function renderTagManager(){
 
 function renameCurrentPresetFromModal(){
   const name = normalizeTagName(presetNameInput?.value);
+
   if(!name){
     alert("Enter a week mode name.");
     return;
   }
+
   const result = renameCurrentPreset(name);
   if(!result.ok){
     alert(result.message);
     return;
   }
+
   render();
-  openPresetManager();
+  closePresetManager();
 }
 
 function deleteCurrentPresetFromModal(){
   const preset = getActivePreset();
+
   if(!preset){
     alert("No saved week mode is currently active.");
     return;
@@ -1821,8 +1829,9 @@ function deleteCurrentPresetFromModal(){
         alert(result.message);
         return;
       }
+
       render();
-      openPresetManager();
+      closePresetManager();
     }
   );
 }
@@ -2007,16 +2016,18 @@ function bindEvents(){
   });
 
   btnCloseConfirm?.addEventListener("click", () => {
-    pendingConfirmAction = null;
-    closeConfirmModal();
+    closeConfirmModal(true);
   });
 
   btnCancelConfirm?.addEventListener("click", () => {
-    pendingConfirmAction = null;
-    closeConfirmModal();
+    closeConfirmModal(true);
   });
 
-  btnOkConfirm?.addEventListener("click", handleConfirmOk);
+  btnOkConfirm?.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleConfirmOk();
+  });
 
   confirmOverlay?.addEventListener("click", (e) => {
     if(e.target === confirmOverlay){
