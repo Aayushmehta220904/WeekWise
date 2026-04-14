@@ -15,7 +15,7 @@
       <div class="typewriter">
         <span id="typeText"></span><span class="caret">|</span>
       </div>
-      <div class="intro-sub">Plan with clarity. Execute with consistency.</div>
+      <div class="intro-sub">Welcome 🤗</div>
     </div>
   </div>
 
@@ -353,6 +353,25 @@
         <button class="btn btn-secondary" id="btnCancelCreateMode">Cancel</button>
         <div class="spacer"></div>
         <button class="btn btn-primary" id="btnConfirmCreateMode">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Modal -->
+  <div id="confirmOverlay" class="overlay overlay-center hidden">
+    <div class="modal-box confirm-box glass-strong">
+      <div class="drawer-head modal-head">
+        <div>
+          <div class="drawer-title" id="confirmTitle">Confirm Action</div>
+          <div class="drawer-meta" id="confirmMessage">Are you sure?</div>
+        </div>
+        <button class="icon-btn" id="btnCloseConfirm" aria-label="Close">✕</button>
+      </div>
+
+      <div class="drawer-foot">
+        <button class="btn btn-secondary" id="btnCancelConfirm">Cancel</button>
+        <div class="spacer"></div>
+        <button class="btn btn-danger" id="btnConfirmAction">Delete</button>
       </div>
     </div>
   </div>

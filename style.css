@@ -348,6 +348,7 @@ body{
   font-size:15px;
   font-weight:700;
   margin-top:2px;
+  color:var(--text);
 }
 .section-meta{
   font-size:12px;
@@ -391,10 +392,12 @@ body{
   justify-content:space-between;
   align-items:flex-start;
   cursor:pointer;
+  color:var(--text);
 }
 .analytics-toggle-left{
   text-align:left;
   width:100%;
+  color:var(--text);
 }
 .analytics-toggle-icon{
   font-weight:700;
@@ -422,6 +425,7 @@ body{
   margin-top:4px;
   font-size:15px;
   font-weight:800;
+  color:var(--text);
 }
 
 .analytics-panel{ margin-top:14px; }
@@ -772,6 +776,9 @@ body{
   border-radius:28px;
   overflow:hidden;
   box-shadow:var(--shadow-md);
+}
+.confirm-box{
+  max-width:460px;
 }
 .modal-head{
   padding-bottom:16px;

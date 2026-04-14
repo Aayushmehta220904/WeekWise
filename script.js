@@ -319,12 +319,16 @@ let toolsOverlay, btnOpenTools, btnCloseTools, btnCloseTools2, btnOpenTagManager
 let tagManagerOverlay, btnCloseTagManager, btnCloseTagManager2, tagManagerList;
 let presetOverlay, btnClosePresetModal, btnClosePresetModal2, presetNameInput, btnRenamePreset, btnDeletePreset;
 let createModeOverlay, btnCloseCreateMode, btnCancelCreateMode, btnConfirmCreateMode, createModeTitle, createModeSub, createModeHint, createModeNameInput;
+let confirmOverlay, btnCloseConfirm, btnCancelConfirm, btnOkConfirm, confirmTitle, confirmMessage;
 let btnClearAll;
 
 let activeDay = null;
 let activeHour = null;
 let modalSelectedTagIds = [];
 let managedDay = null;
+
+/* UI confirm state */
+let pendingConfirmAction = null;
 
 function initDomRefs(){
   intro = document.getElementById("intro");
@@ -412,6 +416,13 @@ function initDomRefs(){
   createModeHint = document.getElementById("createModeHint");
   createModeNameInput = document.getElementById("createModeNameInput");
 
+  confirmOverlay = document.getElementById("confirmOverlay");
+  btnCloseConfirm = document.getElementById("btnCloseConfirm");
+  btnCancelConfirm = document.getElementById("btnCancelConfirm");
+  btnOkConfirm = document.getElementById("btnOkConfirm");
+  confirmTitle = document.getElementById("confirmTitle");
+  confirmMessage = document.getElementById("confirmMessage");
+
   btnClearAll = document.getElementById("btnClearAll");
 }
 
@@ -453,6 +464,28 @@ function updateThemeToggleUI(){
   const current = document.body.getAttribute("data-theme") || "dark";
   btnThemeDark?.classList.toggle("active", current === "dark");
   btnThemeLight?.classList.toggle("active", current === "light");
+}
+
+/* UI Confirm Modal */
+function openConfirmModal(title, message, onConfirm){
+  if(!confirmOverlay) return;
+
+  pendingConfirmAction = typeof onConfirm === "function" ? onConfirm : null;
+  if(confirmTitle) confirmTitle.textContent = title || "Confirm";
+  if(confirmMessage) confirmMessage.textContent = message || "Are you sure?";
+
+  confirmOverlay.classList.remove("hidden");
+}
+
+function closeConfirmModal(){
+  pendingConfirmAction = null;
+  confirmOverlay?.classList.add("hidden");
+}
+
+function handleConfirmOk(){
+  const action = pendingConfirmAction;
+  closeConfirmModal();
+  if(action) action();
 }
 
 /* Helpers */
@@ -1219,7 +1252,6 @@ function renderTagBreakdown(data){
 function renderDayBreakdown(data){
   dayBreakdown.innerHTML = "";
   const maxFilled = Math.max(1, ...DISPLAY_DAYS.map(day => data.dayMap[day].filled));
-  const isDark = (document.body.getAttribute("data-theme") || "dark") === "dark";
 
   DISPLAY_DAYS.forEach(day => {
     const filled = data.dayMap[day].filled;
@@ -1239,7 +1271,7 @@ function renderDayBreakdown(data){
     const fill = document.createElement("div");
     fill.className = "bar-fill";
     fill.style.width = `${(filled / maxFilled) * 100}%`;
-    fill.style.background = isDark ? "#ff8a1f" : "#ff8a1f";
+    fill.style.background = "#ff8a1f";
 
     bar.appendChild(fill);
 
@@ -1581,16 +1613,20 @@ function renameCurrentVariantFromManager(){
 function deleteCurrentVariantFromManager(){
   if(!managedDay) return;
   const current = getActiveVariant(managedDay);
-  const ok = confirm(`Delete variant "${current.name}" for ${managedDay}?`);
-  if(!ok) return;
 
-  const result = deleteCurrentVariant(managedDay);
-  if(!result.ok){
-    alert(result.message);
-    return;
-  }
-  render();
-  openDayManager(managedDay);
+  openConfirmModal(
+    "Delete Variant",
+    `Delete variant "${current.name}" for ${managedDay}?`,
+    () => {
+      const result = deleteCurrentVariant(managedDay);
+      if(!result.ok){
+        alert(result.message);
+        return;
+      }
+      render();
+      openDayManager(managedDay);
+    }
+  );
 }
 
 function copyDayFromManager(){
@@ -1721,16 +1757,19 @@ function renderTagManager(){
     });
 
     deleteBtn.addEventListener("click", () => {
-      const ok = confirm(`Delete tag "${tag.name}" from everywhere?`);
-      if(!ok) return;
+      openConfirmModal(
+        "Delete Tag",
+        `Delete tag "${tag.name}" from everywhere?`,
+        () => {
+          deleteTagGlobally(tag.id);
+          modalSelectedTagIds = modalSelectedTagIds.filter(id => id !== tag.id);
 
-      deleteTagGlobally(tag.id);
-      modalSelectedTagIds = modalSelectedTagIds.filter(id => id !== tag.id);
-
-      render();
-      renderTagManager();
-      renderAvailableTags();
-      renderSelectedTagsPreview();
+          render();
+          renderTagManager();
+          renderAvailableTags();
+          renderSelectedTagsPreview();
+        }
+      );
     });
 
     row.appendChild(editBtn);
@@ -1766,16 +1805,20 @@ function deleteCurrentPresetFromModal(){
     alert("No saved week mode is currently active.");
     return;
   }
-  const ok = confirm(`Delete week mode "${preset.name}"?`);
-  if(!ok) return;
 
-  const result = deleteCurrentPreset();
-  if(!result.ok){
-    alert(result.message);
-    return;
-  }
-  render();
-  openPresetManager();
+  openConfirmModal(
+    "Delete Week Mode",
+    `Delete week mode "${preset.name}"?`,
+    () => {
+      const result = deleteCurrentPreset();
+      if(!result.ok){
+        alert(result.message);
+        return;
+      }
+      render();
+      openPresetManager();
+    }
+  );
 }
 
 /* Main render */
@@ -1879,8 +1922,15 @@ function bindEvents(){
 
   btnDelete?.addEventListener("click", () => {
     if(activeDay == null || activeHour == null) return;
-    deleteSlotByScope(applyScopeSelect?.value || "this_slot");
-    closeModal();
+
+    openConfirmModal(
+      "Delete Slot",
+      "Delete this slot data?",
+      () => {
+        deleteSlotByScope(applyScopeSelect?.value || "this_slot");
+        closeModal();
+      }
+    );
   });
 
   btnCloseDayManager?.addEventListener("click", closeDayManager);
@@ -1952,25 +2002,35 @@ function bindEvents(){
     if(e.target === createModeOverlay) closeCreateModeModal();
   });
 
+  btnCloseConfirm?.addEventListener("click", closeConfirmModal);
+  btnCancelConfirm?.addEventListener("click", closeConfirmModal);
+  btnOkConfirm?.addEventListener("click", handleConfirmOk);
+  confirmOverlay?.addEventListener("click", (e) => {
+    if(e.target === confirmOverlay) closeConfirmModal();
+  });
+
   btnClearAll?.addEventListener("click", () => {
-    const ok = confirm("Clear all WeekWise data?");
-    if(!ok) return;
+    openConfirmModal(
+      "Clear All Data",
+      "Clear all WeekWise data?",
+      () => {
+        localStorage.removeItem(STORAGE_KEY_V5);
+        localStorage.removeItem(LEGACY_KEY_V4);
+        localStorage.removeItem(LEGACY_KEY_V3);
+        localStorage.removeItem(LEGACY_KEY_V2);
 
-    localStorage.removeItem(STORAGE_KEY_V5);
-    localStorage.removeItem(LEGACY_KEY_V4);
-    localStorage.removeItem(LEGACY_KEY_V3);
-    localStorage.removeItem(LEGACY_KEY_V2);
-
-    appData = normalizeAppData({
-      tags: {},
-      dayVariants: getDefaultVariantsState(),
-      ...getDefaultPresetsState()
-    });
-    activeFilters = [];
-    commandQuery = "";
-    if(commandSearch) commandSearch.value = "";
-    render();
-    closeTools();
+        appData = normalizeAppData({
+          tags: {},
+          dayVariants: getDefaultVariantsState(),
+          ...getDefaultPresetsState()
+        });
+        activeFilters = [];
+        commandQuery = "";
+        if(commandSearch) commandSearch.value = "";
+        render();
+        closeTools();
+      }
+    );
   });
 }
 
