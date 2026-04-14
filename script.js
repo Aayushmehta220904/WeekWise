@@ -326,8 +326,6 @@ let activeDay = null;
 let activeHour = null;
 let modalSelectedTagIds = [];
 let managedDay = null;
-
-/* UI confirm state */
 let pendingConfirmAction = null;
 
 function initDomRefs(){
@@ -460,17 +458,36 @@ function applyTheme(theme){
   updateThemeToggleUI();
 }
 
+/* Fix for dark mode insights text if theme CSS is imperfect */
+function applyInsightsTextFix(){
+  const analyticsToggle = document.getElementById("btnToggleAnalytics");
+  if(!analyticsToggle) return;
+
+  analyticsToggle.style.color = "var(--text)";
+  analyticsToggle.querySelectorAll("*").forEach(el => {
+    if(
+      el.classList.contains("section-eyebrow") ||
+      el.classList.contains("analytics-toggle-icon")
+    ){
+      el.style.color = "var(--muted)";
+    }else{
+      el.style.color = "var(--text)";
+    }
+  });
+}
+
 function updateThemeToggleUI(){
   const current = document.body.getAttribute("data-theme") || "dark";
   btnThemeDark?.classList.toggle("active", current === "dark");
   btnThemeLight?.classList.toggle("active", current === "light");
 }
 
-/* UI Confirm Modal */
+/* Confirm modal */
 function openConfirmModal(title, message, onConfirm){
   if(!confirmOverlay) return;
 
-  pendingConfirmAction = typeof onConfirm === "function" ? onConfirm : null;
+  pendingConfirmAction = onConfirm;
+
   if(confirmTitle) confirmTitle.textContent = title || "Confirm";
   if(confirmMessage) confirmMessage.textContent = message || "Are you sure?";
 
@@ -478,14 +495,17 @@ function openConfirmModal(title, message, onConfirm){
 }
 
 function closeConfirmModal(){
-  pendingConfirmAction = null;
   confirmOverlay?.classList.add("hidden");
 }
 
 function handleConfirmOk(){
   const action = pendingConfirmAction;
-  closeConfirmModal();
-  if(action) action();
+  confirmOverlay?.classList.add("hidden");
+  pendingConfirmAction = null;
+
+  if(typeof action === "function"){
+    action();
+  }
 }
 
 /* Helpers */
@@ -575,7 +595,6 @@ function deleteTagGlobally(tagId){
   saveData();
 }
 
-/* Variants */
 function ensureDayVariantState(dayName){
   if(!appData.dayVariants[dayName]){
     appData.dayVariants[dayName] = {
@@ -700,7 +719,6 @@ function deleteCurrentVariant(dayName){
   return { ok:true };
 }
 
-/* Presets */
 function getPresetsArray(){
   return Object.values(appData.presets).sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -834,7 +852,6 @@ function deleteCurrentPreset(){
   return { ok:true };
 }
 
-/* Slots */
 function getSlotData(dayName, hour, variantId = null){
   const state = getDayState(dayName);
   const activeId = variantId || state.activeVariantId;
@@ -948,7 +965,6 @@ function copyWholeDayToAnotherDay(sourceDay, targetDay){
   render();
 }
 
-/* Search + UI helpers */
 function getTagObjectsFromIds(tagIds){
   return tagIds.map(getTagById).filter(Boolean);
 }
@@ -984,7 +1000,6 @@ function matchesCommandQuery(dayName, hour, slot){
   return getSlotSearchText(dayName, hour, slot).includes(commandQuery);
 }
 
-/* Filters */
 function renderFilters(){
   if(!tagFilters || !filtersSubText) return;
 
@@ -1024,7 +1039,6 @@ function renderFilters(){
   filtersSubText.textContent = parts.join(" • ");
 }
 
-/* Preset UI */
 function renderPresetSelect(){
   if(!presetSelect || !presetSubText) return;
 
@@ -1050,7 +1064,6 @@ function renderPresetSelect(){
     : "Custom current week is active";
 }
 
-/* Analytics */
 function renderAnalyticsVisibility(){
   if(!analyticsPanel || !analyticsToggleIcon) return;
   analyticsPanel.classList.toggle("hidden", !analyticsOpen);
@@ -1287,7 +1300,6 @@ function renderDayBreakdown(data){
   });
 }
 
-/* Search summary */
 function renderSearchSummary(matchCount){
   if(!searchSummary) return;
 
@@ -1301,7 +1313,6 @@ function renderSearchSummary(matchCount){
   searchSummary.textContent = `Search active: "${commandQuery}" • ${matchCount} matching slot${matchCount === 1 ? "" : "s"}`;
 }
 
-/* Timetable */
 function renderTimetable(){
   if(!timetable) return;
 
@@ -1440,7 +1451,6 @@ function renderTimetable(){
   renderSearchSummary(matchCount);
 }
 
-/* Slot drawer */
 function openModal(dayName, hour){
   activeDay = dayName;
   activeHour = hour;
@@ -1561,7 +1571,6 @@ function addTagFromModal(){
   renderAnalytics();
 }
 
-/* Day manager */
 function openDayManager(dayName){
   managedDay = dayName;
   if(dayManagerMeta) dayManagerMeta.textContent = `${dayName} • Current Variant: ${getActiveVariant(dayName).name}`;
@@ -1637,7 +1646,6 @@ function copyDayFromManager(){
   openDayManager(managedDay);
 }
 
-/* Drawers + modals */
 function openTools(){ toolsOverlay?.classList.remove("hidden"); }
 function closeTools(){ toolsOverlay?.classList.add("hidden"); }
 
@@ -1693,7 +1701,6 @@ function closePresetManager(){
   if(presetNameInput) presetNameInput.value = "";
 }
 
-/* Tag manager */
 function renderTagManager(){
   if(!tagManagerList) return;
   tagManagerList.innerHTML = "";
@@ -1783,7 +1790,6 @@ function renderTagManager(){
   });
 }
 
-/* Preset manager actions */
 function renameCurrentPresetFromModal(){
   const name = normalizeTagName(presetNameInput?.value);
   if(!name){
@@ -1821,7 +1827,6 @@ function deleteCurrentPresetFromModal(){
   );
 }
 
-/* Main render */
 function render(){
   renderPresetSelect();
   renderFilters();
@@ -1829,13 +1834,13 @@ function render(){
   renderAnalytics();
   renderTimetable();
   updateThemeToggleUI();
+  applyInsightsTextFix();
 
   if(btnClearSearch){
     btnClearSearch.classList.toggle("hidden", !commandQuery);
   }
 }
 
-/* Refresh stability */
 function safeRender(){
   try{
     render();
@@ -1859,12 +1864,10 @@ function ensureTimetableRendered(retries = 4, delay = 120){
   }
 }
 
-/* Save */
 function saveData(){
   localStorage.setItem(STORAGE_KEY_V5, JSON.stringify(appData));
 }
 
-/* Events */
 function bindEvents(){
   btnThemeDark?.addEventListener("click", () => {
     applyTheme("dark");
@@ -1879,6 +1882,7 @@ function bindEvents(){
   btnToggleAnalytics?.addEventListener("click", () => {
     analyticsOpen = !analyticsOpen;
     renderAnalyticsVisibility();
+    applyInsightsTextFix();
   });
 
   commandSearch?.addEventListener("input", () => {
@@ -2002,11 +2006,23 @@ function bindEvents(){
     if(e.target === createModeOverlay) closeCreateModeModal();
   });
 
-  btnCloseConfirm?.addEventListener("click", closeConfirmModal);
-  btnCancelConfirm?.addEventListener("click", closeConfirmModal);
+  btnCloseConfirm?.addEventListener("click", () => {
+    pendingConfirmAction = null;
+    closeConfirmModal();
+  });
+
+  btnCancelConfirm?.addEventListener("click", () => {
+    pendingConfirmAction = null;
+    closeConfirmModal();
+  });
+
   btnOkConfirm?.addEventListener("click", handleConfirmOk);
+
   confirmOverlay?.addEventListener("click", (e) => {
-    if(e.target === confirmOverlay) closeConfirmModal();
+    if(e.target === confirmOverlay){
+      pendingConfirmAction = null;
+      closeConfirmModal();
+    }
   });
 
   btnClearAll?.addEventListener("click", () => {
@@ -2034,7 +2050,6 @@ function bindEvents(){
   });
 }
 
-/* Boot */
 function boot(){
   applyTheme(getSavedTheme());
   initDomRefs();
