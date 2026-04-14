@@ -14,16 +14,16 @@
       <div class="typewriter">
         <span id="typeText"></span><span class="caret">|</span>
       </div>
-      <div class="intro-sub">A vintage timetable that keeps you honest.</div>
+      <div class="intro-sub">Your week. One page. Zero excuses.</div>
     </div>
   </div>
 
   <main class="page">
-    <section class="notebook">
+    <section class="app-shell">
       <header class="topbar">
         <div class="brand">
           <div class="brand-title">WeekWise</div>
-          <div class="brand-sub">Plan smart. Execute better.</div>
+          <div class="brand-sub">Minimal weekly planning</div>
         </div>
 
         <div class="header-controls">
@@ -36,13 +36,13 @@
         </div>
       </header>
 
-      <div class="filters-wrap">
+      <section class="filters-wrap">
         <div class="filters-head">
           <div class="filters-title">Filters</div>
-          <div class="filters-sub" id="filtersSubText">Select one or more tags</div>
+          <div class="filters-sub" id="filtersSubText">Showing all slots</div>
         </div>
         <div id="tagFilters" class="tag-filters"></div>
-      </div>
+      </section>
 
       <section class="analytics-wrap">
         <button class="analytics-toggle" id="btnToggleAnalytics" type="button">
@@ -52,19 +52,19 @@
 
         <div id="analyticsPanel" class="analytics-panel hidden">
           <section class="insights-grid">
-            <div class="card">
-              <div class="card-title">Weekly Analytics</div>
+            <div class="panel">
+              <div class="panel-title">Weekly Overview</div>
               <div class="stats" id="statsGrid"></div>
-              <div class="hint">Each slot counts as 1 hour. Locked slots are protected from mass overwrite.</div>
+              <div class="hint">Each slot counts as 1 hour. Locked slots are protected from bulk overwrite.</div>
             </div>
 
-            <div class="card">
-              <div class="card-title">Tag Breakdown</div>
+            <div class="panel">
+              <div class="panel-title">Tag Breakdown</div>
               <div id="tagBreakdown" class="tag-breakdown"></div>
             </div>
 
-            <div class="card">
-              <div class="card-title">Day Breakdown</div>
+            <div class="panel">
+              <div class="panel-title">Day Breakdown</div>
               <div id="dayBreakdown" class="day-breakdown"></div>
             </div>
           </section>

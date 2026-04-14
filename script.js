@@ -172,7 +172,6 @@ function normalizeAppData(app){
   return normalized;
 }
 
-/* Migration */
 function migrateFromV2(){
   const raw = localStorage.getItem(LEGACY_KEY_V2);
   const app = {
@@ -377,7 +376,6 @@ let activeHour = null;
 let modalSelectedTagIds = [];
 let managedDay = null;
 
-/* DOM init */
 function initDomRefs(){
   intro = document.getElementById("intro");
   typeEl = document.getElementById("typeText");
@@ -1203,7 +1201,7 @@ function renderTimetable(){
   const currentDayName = DAYS[now.getDay()];
   const currentHour = now.getHours();
 
-  DISPLAY_DAYS.forEach((dayName, idx) => {
+  DISPLAY_DAYS.forEach((dayName) => {
     const dayWrap = document.createElement("div");
     dayWrap.className = "day" + (dayName === currentDayName ? " current-day" : "");
 
@@ -1325,8 +1323,6 @@ function renderTimetable(){
     dayWrap.appendChild(head);
     dayWrap.appendChild(grid);
     timetable.appendChild(dayWrap);
-
-    dayWrap.style.animationDelay = `${idx * 55}ms`;
   });
 }
 
@@ -1451,7 +1447,7 @@ function addTagFromModal(){
   renderAnalytics();
 }
 
-/* Day Manager */
+/* Day manager */
 function openDayManager(dayName){
   managedDay = dayName;
   if(dayManagerMeta) dayManagerMeta.textContent = `${dayName} • Current Variant: ${getActiveVariant(dayName).name}`;
@@ -1677,7 +1673,7 @@ function render(){
   renderTimetable();
 }
 
-/* Refresh fix */
+/* Refresh stability */
 function safeRender(){
   try{
     render();
@@ -1686,11 +1682,9 @@ function safeRender(){
   }
 }
 
-function ensureTimetableRendered(retries = 5, delay = 120){
+function ensureTimetableRendered(retries = 4, delay = 120){
   if(!timetable) return;
-
-  const hasChildren = timetable.children.length > 0;
-  if(hasChildren) return;
+  if(timetable.children.length > 0) return;
 
   try{
     renderTimetable();
@@ -1703,7 +1697,7 @@ function ensureTimetableRendered(retries = 5, delay = 120){
   }
 }
 
-/* Event binding */
+/* Bind events */
 function bindEvents(){
   btnToggleAnalytics?.addEventListener("click", () => {
     analyticsOpen = !analyticsOpen;
@@ -1788,7 +1782,7 @@ function bindEvents(){
   presetSelect?.addEventListener("change", () => {
     if(presetSelect.value === "__custom__"){
       appData.activePresetId = null;
-      saveData();
+      localStorage.setItem(STORAGE_KEY_V5, JSON.stringify(appData));
       render();
       return;
     }
@@ -1822,6 +1816,10 @@ function bindEvents(){
   });
 }
 
+function saveData(){
+  localStorage.setItem(STORAGE_KEY_V5, JSON.stringify(appData));
+}
+
 /* Boot */
 function boot(){
   initDomRefs();
@@ -1829,18 +1827,15 @@ function boot(){
   runTypewriter();
   safeRender();
   ensureTimetableRendered();
-
-  setTimeout(() => ensureTimetableRendered(4, 150), 100);
-  setTimeout(() => ensureTimetableRendered(3, 200), 350);
+  setTimeout(() => ensureTimetableRendered(3, 150), 120);
+  setInterval(() => {
+    safeRender();
+    ensureTimetableRendered(1, 80);
+  }, 60 * 1000);
 }
 
 if(document.readyState === "loading"){
-  document.addEventListener("DOMContentLoaded", boot, { once: true });
+  document.addEventListener("DOMContentLoaded", boot, { once:true });
 }else{
   boot();
 }
-
-setInterval(() => {
-  safeRender();
-  ensureTimetableRendered(1, 80);
-}, 60 * 1000);
