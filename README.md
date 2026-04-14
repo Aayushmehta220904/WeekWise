@@ -71,6 +71,8 @@ WeekWise/
 └── assets/
     ├── logo.png
     └── favicon.png
+    └── icon-192.png
+    └── icon-512.png
 ```
 
 ## How It Works
@@ -85,6 +87,8 @@ The app renders the weekly timetable dynamically using JavaScript. Each day cont
 Users can also create alternate variants of days and save complete weekly arrangements as reusable **Week Modes**.
 
 All data is stored in the browser using **localStorage**, so schedules remain available even after refreshing the page.
+
+The project also includes a **web app manifest** so that browsers like Chrome can install WeekWise as an app with dedicated icons instead of using a generated default shortcut icon.
 
 ## Use Cases
 
@@ -119,6 +123,7 @@ All data is stored in the browser using **localStorage**, so schedules remain av
 - Lock important slots
 - Analyze weekly schedule distribution
 - Preserve all data using browser storage
+- Custom logo, favicon, and installable app icons support
 
 ## Limitations
 
