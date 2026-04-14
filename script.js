@@ -446,8 +446,7 @@ function initDomRefs(){
   btnClearAll = document.getElementById("btnClearAll");
 }
 
-/* Intro */
-const introText = "Your week. One page. Zero excuses.";
+const introText = "Productive planning, without the chaos.";
 let t = 0;
 
 function runTypewriter(){
@@ -459,11 +458,11 @@ function runTypewriter(){
     if(t < introText.length){
       typeEl.textContent += introText.charAt(t);
       t++;
-      setTimeout(tick, 40);
+      setTimeout(tick, 36);
     }else{
       setTimeout(() => {
         if(intro) intro.style.display = "none";
-      }, 650);
+      }, 600);
     }
   };
   tick();
@@ -672,7 +671,7 @@ function deleteCurrentVariant(dayName){
   return { ok:true };
 }
 
-/* Preset helpers */
+/* Presets */
 function getPresetsArray(){
   return Object.values(appData.presets).sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -763,7 +762,7 @@ function deleteCurrentPreset(){
   return { ok:true };
 }
 
-/* Slot helpers */
+/* Slots */
 function getSlotData(dayName, hour, variantId = null){
   const state = getDayState(dayName);
   const activeId = variantId || state.activeVariantId;
@@ -883,6 +882,7 @@ function copyWholeDayToAnotherDay(sourceDay, targetDay){
   render();
 }
 
+/* UI helpers */
 function getTagObjectsFromIds(tagIds){
   return tagIds.map(getTagById).filter(Boolean);
 }
@@ -1175,7 +1175,7 @@ function renderDayBreakdown(data){
     const fill = document.createElement("div");
     fill.className = "bar-fill";
     fill.style.width = `${(filled / maxFilled) * 100}%`;
-    fill.style.background = "#1f1f1f";
+    fill.style.background = "#4f46e5";
 
     bar.appendChild(fill);
 
@@ -1230,7 +1230,7 @@ function renderTimetable(){
     controls.className = "day-controls";
 
     const manageBtn = document.createElement("button");
-    manageBtn.className = "btn btn-ghost";
+    manageBtn.className = "btn btn-secondary";
     manageBtn.textContent = "Manage";
     manageBtn.addEventListener("click", () => openDayManager(dayName));
 
@@ -1251,7 +1251,6 @@ function renderTimetable(){
       const slot = document.createElement("div");
       slot.className = "slot";
       if(tagObjects.length) slot.classList.add("has-tags");
-      else slot.classList.add("empty");
       if(data.locked) slot.classList.add("locked-slot");
       if(dayName === currentDayName && hour === currentHour){
         slot.classList.add("now");
@@ -1560,7 +1559,7 @@ function renderTagManager(){
     preview.textContent = tag.name;
 
     const saveBtn = document.createElement("button");
-    saveBtn.className = "btn btn-ghost";
+    saveBtn.className = "btn btn-secondary";
     saveBtn.textContent = "Save";
 
     const deleteBtn = document.createElement("button");
@@ -1697,6 +1696,11 @@ function ensureTimetableRendered(retries = 4, delay = 120){
   }
 }
 
+/* Save */
+function saveData(){
+  localStorage.setItem(STORAGE_KEY_V5, JSON.stringify(appData));
+}
+
 /* Bind events */
 function bindEvents(){
   btnToggleAnalytics?.addEventListener("click", () => {
@@ -1782,7 +1786,7 @@ function bindEvents(){
   presetSelect?.addEventListener("change", () => {
     if(presetSelect.value === "__custom__"){
       appData.activePresetId = null;
-      localStorage.setItem(STORAGE_KEY_V5, JSON.stringify(appData));
+      saveData();
       render();
       return;
     }
@@ -1814,10 +1818,6 @@ function bindEvents(){
     render();
     closeTools();
   });
-}
-
-function saveData(){
-  localStorage.setItem(STORAGE_KEY_V5, JSON.stringify(appData));
 }
 
 /* Boot */
