@@ -301,6 +301,7 @@ function loadData(){
 let appData = loadData();
 let activeFilters = [];
 let analyticsOpen = false;
+let commandQuery = "";
 
 /* DOM refs */
 let intro;
@@ -321,6 +322,10 @@ let presetSubText;
 let btnToggleAnalytics;
 let analyticsPanel;
 let analyticsToggleIcon;
+
+let commandSearch;
+let btnClearSearch;
+let searchSummary;
 
 let overlay;
 let btnClose;
@@ -396,6 +401,10 @@ function initDomRefs(){
   analyticsPanel = document.getElementById("analyticsPanel");
   analyticsToggleIcon = document.getElementById("analyticsToggleIcon");
 
+  commandSearch = document.getElementById("commandSearch");
+  btnClearSearch = document.getElementById("btnClearSearch");
+  searchSummary = document.getElementById("searchSummary");
+
   overlay = document.getElementById("modalOverlay");
   btnClose = document.getElementById("btnCloseModal");
   btnCancel = document.getElementById("btnCancel");
@@ -446,7 +455,7 @@ function initDomRefs(){
   btnClearAll = document.getElementById("btnClearAll");
 }
 
-const introText = "Productive planning, without the chaos.";
+const introText = "Plan with clarity. Execute with consistency.";
 let t = 0;
 
 function runTypewriter(){
@@ -458,7 +467,7 @@ function runTypewriter(){
     if(t < introText.length){
       typeEl.textContent += introText.charAt(t);
       t++;
-      setTimeout(tick, 36);
+      setTimeout(tick, 34);
     }else{
       setTimeout(() => {
         if(intro) intro.style.display = "none";
@@ -468,7 +477,7 @@ function runTypewriter(){
   tick();
 }
 
-/* Tag helpers */
+/* Helpers */
 function getTagsArray(){
   return Object.values(appData.tags || {}).sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -555,7 +564,7 @@ function deleteTagGlobally(tagId){
   saveData();
 }
 
-/* Variant helpers */
+/* Variants */
 function ensureDayVariantState(dayName){
   if(!appData.dayVariants[dayName]){
     appData.dayVariants[dayName] = {
@@ -882,7 +891,7 @@ function copyWholeDayToAnotherDay(sourceDay, targetDay){
   render();
 }
 
-/* UI helpers */
+/* Search + UI helpers */
 function getTagObjectsFromIds(tagIds){
   return tagIds.map(getTagById).filter(Boolean);
 }
@@ -908,12 +917,23 @@ function createColorDot(color, className = "tag-color-dot"){
   return dot;
 }
 
-/* Filters */
-function isVisibleByFilter(slot){
-  if(activeFilters.length === 0) return true;
-  return activeFilters.every(filterId => slot.tagIds.includes(filterId));
+function getSlotSearchText(dayName, hour, slot){
+  const tagNames = getTagObjectsFromIds(slot.tagIds).map(tag => tag.name).join(" ");
+  return [
+    dayName,
+    hourToLabel(hour),
+    slot.title,
+    slot.notes,
+    tagNames
+  ].join(" ").toLowerCase();
 }
 
+function matchesCommandQuery(dayName, hour, slot){
+  if(!commandQuery) return true;
+  return getSlotSearchText(dayName, hour, slot).includes(commandQuery);
+}
+
+/* Filters */
 function renderFilters(){
   if(!tagFilters || !filtersSubText) return;
 
@@ -947,10 +967,10 @@ function renderFilters(){
     tagFilters.appendChild(btn);
   });
 
-  filtersSubText.textContent =
-    activeFilters.length === 0
-      ? "Showing all slots"
-      : `Showing slots containing all selected tags (${activeFilters.length})`;
+  const parts = [];
+  parts.push(activeFilters.length === 0 ? "Showing all tags" : `Tag filters: ${activeFilters.length}`);
+  if(commandQuery) parts.push(`Search: "${commandQuery}"`);
+  filtersSubText.textContent = parts.join(" • ");
 }
 
 /* Preset UI */
@@ -1175,7 +1195,7 @@ function renderDayBreakdown(data){
     const fill = document.createElement("div");
     fill.className = "bar-fill";
     fill.style.width = `${(filled / maxFilled) * 100}%`;
-    fill.style.background = "#4f46e5";
+    fill.style.background = "#2563EB";
 
     bar.appendChild(fill);
 
@@ -1191,6 +1211,20 @@ function renderDayBreakdown(data){
   });
 }
 
+/* Search summary */
+function renderSearchSummary(matchCount){
+  if(!searchSummary) return;
+
+  if(!commandQuery){
+    searchSummary.classList.add("hidden");
+    searchSummary.textContent = "";
+    return;
+  }
+
+  searchSummary.classList.remove("hidden");
+  searchSummary.textContent = `Search active: "${commandQuery}" • ${matchCount} matching slot${matchCount === 1 ? "" : "s"}`;
+}
+
 /* Timetable */
 function renderTimetable(){
   if(!timetable) return;
@@ -1200,6 +1234,7 @@ function renderTimetable(){
   const now = new Date();
   const currentDayName = DAYS[now.getDay()];
   const currentHour = now.getHours();
+  let matchCount = 0;
 
   DISPLAY_DAYS.forEach((dayName) => {
     const dayWrap = document.createElement("div");
@@ -1244,7 +1279,10 @@ function renderTimetable(){
 
     buildHoursForDay().forEach(hour => {
       const data = getSlotData(dayName, hour);
-      if(!isVisibleByFilter(data)) return;
+      const filterMatch = activeFilters.length === 0 || activeFilters.every(filterId => data.tagIds.includes(filterId));
+      const searchMatch = matchesCommandQuery(dayName, hour, data);
+
+      if(searchMatch) matchCount += 1;
 
       const tagObjects = getTagObjectsFromIds(data.tagIds);
 
@@ -1254,6 +1292,9 @@ function renderTimetable(){
       if(data.locked) slot.classList.add("locked-slot");
       if(dayName === currentDayName && hour === currentHour){
         slot.classList.add("now");
+      }
+      if(!(filterMatch && searchMatch)){
+        slot.classList.add("dimmed");
       }
 
       const colorsBar = document.createElement("div");
@@ -1323,9 +1364,11 @@ function renderTimetable(){
     dayWrap.appendChild(grid);
     timetable.appendChild(dayWrap);
   });
+
+  renderSearchSummary(matchCount);
 }
 
-/* Slot modal */
+/* Slot drawer */
 function openModal(dayName, hour){
   activeDay = dayName;
   activeHour = hour;
@@ -1518,11 +1561,10 @@ function copyDayFromManager(){
   openDayManager(managedDay);
 }
 
-/* Tools */
+/* Drawers */
 function openTools(){ if(toolsOverlay) toolsOverlay.classList.remove("hidden"); }
 function closeTools(){ if(toolsOverlay) toolsOverlay.classList.add("hidden"); }
 
-/* Tag manager */
 function openTagManager(){
   renderTagManager();
   if(tagManagerOverlay) tagManagerOverlay.classList.remove("hidden");
@@ -1530,6 +1572,7 @@ function openTagManager(){
 function closeTagManager(){
   if(tagManagerOverlay) tagManagerOverlay.classList.add("hidden");
 }
+
 function renderTagManager(){
   if(!tagManagerList) return;
   tagManagerList.innerHTML = "";
@@ -1609,7 +1652,6 @@ function renderTagManager(){
   });
 }
 
-/* Preset manager */
 function openPresetManager(){
   const preset = getActivePreset();
   if(presetNameInput) presetNameInput.value = preset ? preset.name : "";
@@ -1670,6 +1712,10 @@ function render(){
   renderAnalyticsVisibility();
   renderAnalytics();
   renderTimetable();
+
+  if(btnClearSearch){
+    btnClearSearch.classList.toggle("hidden", !commandQuery);
+  }
 }
 
 /* Refresh stability */
@@ -1701,11 +1747,22 @@ function saveData(){
   localStorage.setItem(STORAGE_KEY_V5, JSON.stringify(appData));
 }
 
-/* Bind events */
+/* Events */
 function bindEvents(){
   btnToggleAnalytics?.addEventListener("click", () => {
     analyticsOpen = !analyticsOpen;
     renderAnalyticsVisibility();
+  });
+
+  commandSearch?.addEventListener("input", () => {
+    commandQuery = commandSearch.value.trim().toLowerCase();
+    render();
+  });
+
+  btnClearSearch?.addEventListener("click", () => {
+    commandQuery = "";
+    if(commandSearch) commandSearch.value = "";
+    render();
   });
 
   btnClose?.addEventListener("click", closeModal);
@@ -1815,6 +1872,8 @@ function bindEvents(){
       ...getDefaultPresetsState()
     });
     activeFilters = [];
+    commandQuery = "";
+    if(commandSearch) commandSearch.value = "";
     render();
     closeTools();
   });

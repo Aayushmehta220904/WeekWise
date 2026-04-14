@@ -15,7 +15,7 @@
       <div class="typewriter">
         <span id="typeText"></span><span class="caret">|</span>
       </div>
-      <div class="intro-sub">Productive planning, without the chaos.</div>
+      <div class="intro-sub">Plan with clarity. Execute with consistency.</div>
     </div>
   </div>
 
@@ -25,22 +25,31 @@
         <div class="brand-mark">W</div>
         <div class="brand-block">
           <div class="brand-title">WeekWise</div>
-          <div class="brand-sub">Weekly planning dashboard</div>
+          <div class="brand-sub">Weekly planning workspace</div>
         </div>
       </div>
 
       <div class="header-right">
         <div class="mode-control">
+          <span class="control-icon">◫</span>
           <span class="control-label">Week Mode</span>
           <select id="presetSelect" class="app-select"></select>
         </div>
-        <button class="btn btn-secondary" id="btnCreatePreset">Save As</button>
-        <button class="btn btn-secondary" id="btnOpenTools">Tools</button>
+        <button class="btn btn-secondary" id="btnCreatePreset">＋ Save As</button>
+        <button class="btn btn-secondary" id="btnOpenTools">☰ Tools</button>
       </div>
     </header>
 
+    <section class="command-bar-wrap">
+      <div class="command-bar">
+        <div class="command-icon">⌘</div>
+        <input id="commandSearch" type="text" placeholder="Search title, notes, tags, day, or time…" />
+        <button class="command-clear hidden" id="btnClearSearch" type="button">Clear</button>
+      </div>
+    </section>
+
     <section class="top-strip">
-      <div class="strip-card filters-card">
+      <div class="strip-card">
         <div class="strip-head">
           <div>
             <div class="section-eyebrow">Filters</div>
@@ -51,7 +60,7 @@
         <div id="tagFilters" class="tag-filters"></div>
       </div>
 
-      <div class="strip-card analytics-card">
+      <div class="strip-card analytics-trigger-card">
         <button class="analytics-toggle" id="btnToggleAnalytics" type="button">
           <div class="analytics-toggle-left">
             <div class="section-eyebrow">Insights</div>
@@ -91,25 +100,26 @@
         <div class="section-meta" id="presetSubText">Custom current week is active</div>
       </div>
 
+      <div id="searchSummary" class="search-summary hidden"></div>
       <div id="timetable" class="timetable"></div>
     </section>
   </main>
 
-  <!-- Slot Modal -->
-  <div id="modalOverlay" class="modal-overlay hidden">
-    <div class="modal modal-lg">
-      <div class="modal-head">
+  <!-- Slot Drawer -->
+  <div id="modalOverlay" class="overlay hidden">
+    <aside class="drawer drawer-wide">
+      <div class="drawer-head">
         <div>
-          <div class="modal-title">Edit Slot</div>
-          <div class="modal-meta" id="modalMeta"></div>
+          <div class="drawer-title">Edit Slot</div>
+          <div class="drawer-meta" id="modalMeta"></div>
         </div>
         <button class="icon-btn" id="btnCloseModal" aria-label="Close">✕</button>
       </div>
 
-      <div class="modal-body">
+      <div class="drawer-body">
         <div class="form-grid">
-          <section class="form-section">
-            <div class="form-section-title">Details</div>
+          <section class="form-card">
+            <div class="form-card-title">📝 Details</div>
 
             <label class="field">
               <span>Title</span>
@@ -123,12 +133,12 @@
 
             <label class="field checkbox-field">
               <input id="slotLocked" type="checkbox" />
-              <span>Lock this slot</span>
+              <span>🔒 Lock this slot</span>
             </label>
           </section>
 
-          <section class="form-section">
-            <div class="form-section-title">Tags</div>
+          <section class="form-card">
+            <div class="form-card-title">🏷️ Tags</div>
 
             <div class="field">
               <span>Selected</span>
@@ -146,18 +156,16 @@
               <span>Create New Tag</span>
               <div class="create-tag-row">
                 <input id="newTagName" type="text" placeholder="Tag name" maxlength="24" />
-                <input id="newTagColor" type="color" value="#8b5cf6" />
+                <input id="newTagColor" type="color" value="#2563EB" />
                 <button class="btn btn-secondary" id="btnAddTag" type="button">Add</button>
               </div>
-              <div class="mini-hint">
-                Existing tag names reuse their saved color automatically.
-              </div>
+              <div class="mini-hint">Existing tag names reuse their saved color automatically.</div>
             </div>
           </section>
         </div>
 
-        <section class="form-section compact-section">
-          <div class="form-section-title">Apply Changes</div>
+        <section class="form-card compact-card">
+          <div class="form-card-title">⚙️ Apply Changes</div>
           <label class="field">
             <span>Apply To</span>
             <select id="applyScope">
@@ -170,29 +178,29 @@
         </section>
       </div>
 
-      <div class="modal-foot">
+      <div class="drawer-foot">
         <button class="btn btn-danger" id="btnDeleteSlot">Delete</button>
         <div class="spacer"></div>
         <button class="btn btn-secondary" id="btnCancel">Cancel</button>
         <button class="btn btn-primary" id="btnSave">Save</button>
       </div>
-    </div>
+    </aside>
   </div>
 
-  <!-- Day Manager Modal -->
-  <div id="dayManagerOverlay" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-head">
+  <!-- Day Manager Drawer -->
+  <div id="dayManagerOverlay" class="overlay hidden">
+    <aside class="drawer">
+      <div class="drawer-head">
         <div>
-          <div class="modal-title">Manage Day</div>
-          <div class="modal-meta" id="dayManagerMeta"></div>
+          <div class="drawer-title">Manage Day</div>
+          <div class="drawer-meta" id="dayManagerMeta"></div>
         </div>
         <button class="icon-btn" id="btnCloseDayManager" aria-label="Close">✕</button>
       </div>
 
-      <div class="modal-body">
-        <section class="form-section">
-          <div class="form-section-title">Variant</div>
+      <div class="drawer-body">
+        <section class="form-card">
+          <div class="form-card-title">🗂️ Variant</div>
 
           <label class="field">
             <span>Active Variant</span>
@@ -206,8 +214,8 @@
           </div>
         </section>
 
-        <section class="form-section">
-          <div class="form-section-title">Copy Day</div>
+        <section class="form-card">
+          <div class="form-card-title">📋 Copy Day</div>
 
           <label class="field">
             <span>Copy current active variant to</span>
@@ -219,27 +227,27 @@
         </section>
       </div>
 
-      <div class="modal-foot">
+      <div class="drawer-foot">
         <div class="spacer"></div>
         <button class="btn btn-secondary" id="btnCloseDayManager2">Close</button>
       </div>
-    </div>
+    </aside>
   </div>
 
-  <!-- Tools Modal -->
-  <div id="toolsOverlay" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-head">
+  <!-- Tools Drawer -->
+  <div id="toolsOverlay" class="overlay hidden">
+    <aside class="drawer">
+      <div class="drawer-head">
         <div>
-          <div class="modal-title">Tools</div>
-          <div class="modal-meta">Advanced management actions</div>
+          <div class="drawer-title">Tools</div>
+          <div class="drawer-meta">Advanced management actions</div>
         </div>
         <button class="icon-btn" id="btnCloseTools" aria-label="Close">✕</button>
       </div>
 
-      <div class="modal-body">
-        <section class="form-section">
-          <div class="form-section-title">Project</div>
+      <div class="drawer-body">
+        <section class="form-card">
+          <div class="form-card-title">🧰 Project</div>
           <div class="action-col">
             <button class="btn btn-secondary" id="btnOpenTagManagerFromTools">Manage Tags</button>
             <button class="btn btn-secondary" id="btnOpenPresetManagerFromTools">Manage Week Modes</button>
@@ -248,49 +256,49 @@
         </section>
       </div>
 
-      <div class="modal-foot">
+      <div class="drawer-foot">
         <div class="spacer"></div>
         <button class="btn btn-secondary" id="btnCloseTools2">Close</button>
       </div>
-    </div>
+    </aside>
   </div>
 
-  <!-- Tag Manager Modal -->
-  <div id="tagManagerOverlay" class="modal-overlay hidden">
-    <div class="modal modal-xl">
-      <div class="modal-head">
+  <!-- Tag Manager Drawer -->
+  <div id="tagManagerOverlay" class="overlay hidden">
+    <aside class="drawer drawer-wide">
+      <div class="drawer-head">
         <div>
-          <div class="modal-title">Manage Tags</div>
-          <div class="modal-meta">Edit tag names and colors globally, or delete them from the project.</div>
+          <div class="drawer-title">Manage Tags</div>
+          <div class="drawer-meta">Edit tag names and colors globally, or delete them from the project.</div>
         </div>
         <button class="icon-btn" id="btnCloseTagManager" aria-label="Close">✕</button>
       </div>
 
-      <div class="modal-body">
+      <div class="drawer-body">
         <div id="tagManagerList" class="tag-manager-list"></div>
       </div>
 
-      <div class="modal-foot">
+      <div class="drawer-foot">
         <div class="spacer"></div>
         <button class="btn btn-secondary" id="btnCloseTagManager2">Close</button>
       </div>
-    </div>
+    </aside>
   </div>
 
-  <!-- Preset Manager Modal -->
-  <div id="presetOverlay" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-head">
+  <!-- Preset Manager Drawer -->
+  <div id="presetOverlay" class="overlay hidden">
+    <aside class="drawer">
+      <div class="drawer-head">
         <div>
-          <div class="modal-title">Manage Week Modes</div>
-          <div class="modal-meta">Rename or delete the active saved week mode.</div>
+          <div class="drawer-title">Manage Week Modes</div>
+          <div class="drawer-meta">Rename or delete the active saved week mode.</div>
         </div>
         <button class="icon-btn" id="btnClosePresetModal" aria-label="Close">✕</button>
       </div>
 
-      <div class="modal-body">
-        <section class="form-section">
-          <div class="form-section-title">Current Week Mode</div>
+      <div class="drawer-body">
+        <section class="form-card">
+          <div class="form-card-title">🧭 Current Week Mode</div>
 
           <label class="field">
             <span>Name</span>
@@ -302,17 +310,15 @@
             <button class="btn btn-danger" id="btnDeletePreset">Delete</button>
           </div>
 
-          <div class="mini-hint">
-            “Save As” from the header creates a new week mode from the currently active variants of all days.
-          </div>
+          <div class="mini-hint">“Save As” creates a new week mode from the currently active variants of all days.</div>
         </section>
       </div>
 
-      <div class="modal-foot">
+      <div class="drawer-foot">
         <div class="spacer"></div>
         <button class="btn btn-secondary" id="btnClosePresetModal2">Close</button>
       </div>
-    </div>
+    </aside>
   </div>
 
   <script src="script.js"></script>
