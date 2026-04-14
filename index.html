@@ -6,10 +6,10 @@
   <title>WeekWise</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body data-theme="dark">
 
   <div id="intro" class="intro">
-    <div class="intro-card">
+    <div class="intro-card glass">
       <div class="intro-logo">W</div>
       <div class="intro-title">WeekWise</div>
       <div class="typewriter">
@@ -20,7 +20,7 @@
   </div>
 
   <main class="app">
-    <header class="app-header">
+    <header class="app-header glass">
       <div class="header-left">
         <div class="brand-mark">W</div>
         <div class="brand-block">
@@ -30,26 +30,32 @@
       </div>
 
       <div class="header-right">
+        <div class="theme-toggle" role="tablist" aria-label="Theme switch">
+          <button class="theme-option active" id="btnThemeDark" type="button" data-theme-value="dark">Dark</button>
+          <button class="theme-option" id="btnThemeLight" type="button" data-theme-value="light">Light</button>
+        </div>
+
         <div class="mode-control">
           <span class="control-icon">◫</span>
           <span class="control-label">Week Mode</span>
           <select id="presetSelect" class="app-select"></select>
         </div>
+
         <button class="btn btn-secondary" id="btnCreatePreset">＋ Save As</button>
         <button class="btn btn-secondary" id="btnOpenTools">☰ Tools</button>
       </div>
     </header>
 
     <section class="command-bar-wrap">
-      <div class="command-bar">
+      <div class="command-bar glass">
         <div class="command-icon">⌘</div>
         <input id="commandSearch" type="text" placeholder="Search title, notes, tags, day, or time…" />
-        <button class="command-clear hidden" id="btnClearSearch" type="button">Clear</button>
+        <button class="btn btn-secondary command-clear hidden" id="btnClearSearch" type="button">Clear</button>
       </div>
     </section>
 
     <section class="top-strip">
-      <div class="strip-card">
+      <div class="strip-card glass">
         <div class="strip-head">
           <div>
             <div class="section-eyebrow">Filters</div>
@@ -60,7 +66,7 @@
         <div id="tagFilters" class="tag-filters"></div>
       </div>
 
-      <div class="strip-card analytics-trigger-card">
+      <div class="strip-card glass analytics-trigger-card">
         <button class="analytics-toggle" id="btnToggleAnalytics" type="button">
           <div class="analytics-toggle-left">
             <div class="section-eyebrow">Insights</div>
@@ -73,25 +79,25 @@
 
     <section id="analyticsPanel" class="analytics-panel hidden">
       <div class="analytics-grid">
-        <div class="panel">
+        <div class="panel glass">
           <div class="panel-title">Overview</div>
           <div class="stats" id="statsGrid"></div>
           <div class="hint">Locked slots are protected from bulk overwrite.</div>
         </div>
 
-        <div class="panel">
+        <div class="panel glass">
           <div class="panel-title">Tag Breakdown</div>
           <div id="tagBreakdown" class="tag-breakdown"></div>
         </div>
 
-        <div class="panel">
+        <div class="panel glass">
           <div class="panel-title">Day Breakdown</div>
           <div id="dayBreakdown" class="day-breakdown"></div>
         </div>
       </div>
     </section>
 
-    <section class="timetable-wrap">
+    <section class="timetable-wrap glass">
       <div class="timetable-head">
         <div>
           <div class="section-eyebrow">Planner</div>
@@ -107,7 +113,7 @@
 
   <!-- Slot Drawer -->
   <div id="modalOverlay" class="overlay hidden">
-    <aside class="drawer drawer-wide">
+    <aside class="drawer drawer-wide glass-strong">
       <div class="drawer-head">
         <div>
           <div class="drawer-title">Edit Slot</div>
@@ -118,7 +124,7 @@
 
       <div class="drawer-body">
         <div class="form-grid">
-          <section class="form-card">
+          <section class="form-card glass-soft">
             <div class="form-card-title">📝 Details</div>
 
             <label class="field">
@@ -137,7 +143,7 @@
             </label>
           </section>
 
-          <section class="form-card">
+          <section class="form-card glass-soft">
             <div class="form-card-title">🏷️ Tags</div>
 
             <div class="field">
@@ -156,7 +162,7 @@
               <span>Create New Tag</span>
               <div class="create-tag-row">
                 <input id="newTagName" type="text" placeholder="Tag name" maxlength="24" />
-                <input id="newTagColor" type="color" value="#2563EB" />
+                <input id="newTagColor" type="color" value="#7C8CFF" />
                 <button class="btn btn-secondary" id="btnAddTag" type="button">Add</button>
               </div>
               <div class="mini-hint">Existing tag names reuse their saved color automatically.</div>
@@ -164,7 +170,7 @@
           </section>
         </div>
 
-        <section class="form-card compact-card">
+        <section class="form-card compact-card glass-soft">
           <div class="form-card-title">⚙️ Apply Changes</div>
           <label class="field">
             <span>Apply To</span>
@@ -189,7 +195,7 @@
 
   <!-- Day Manager Drawer -->
   <div id="dayManagerOverlay" class="overlay hidden">
-    <aside class="drawer">
+    <aside class="drawer glass-strong">
       <div class="drawer-head">
         <div>
           <div class="drawer-title">Manage Day</div>
@@ -199,7 +205,7 @@
       </div>
 
       <div class="drawer-body">
-        <section class="form-card">
+        <section class="form-card glass-soft">
           <div class="form-card-title">🗂️ Variant</div>
 
           <label class="field">
@@ -214,7 +220,7 @@
           </div>
         </section>
 
-        <section class="form-card">
+        <section class="form-card glass-soft">
           <div class="form-card-title">📋 Copy Day</div>
 
           <label class="field">
@@ -236,7 +242,7 @@
 
   <!-- Tools Drawer -->
   <div id="toolsOverlay" class="overlay hidden">
-    <aside class="drawer">
+    <aside class="drawer glass-strong">
       <div class="drawer-head">
         <div>
           <div class="drawer-title">Tools</div>
@@ -246,7 +252,7 @@
       </div>
 
       <div class="drawer-body">
-        <section class="form-card">
+        <section class="form-card glass-soft">
           <div class="form-card-title">🧰 Project</div>
           <div class="action-col">
             <button class="btn btn-secondary" id="btnOpenTagManagerFromTools">Manage Tags</button>
@@ -265,7 +271,7 @@
 
   <!-- Tag Manager Drawer -->
   <div id="tagManagerOverlay" class="overlay hidden">
-    <aside class="drawer drawer-wide">
+    <aside class="drawer drawer-wide glass-strong">
       <div class="drawer-head">
         <div>
           <div class="drawer-title">Manage Tags</div>
@@ -287,7 +293,7 @@
 
   <!-- Preset Manager Drawer -->
   <div id="presetOverlay" class="overlay hidden">
-    <aside class="drawer">
+    <aside class="drawer glass-strong">
       <div class="drawer-head">
         <div>
           <div class="drawer-title">Manage Week Modes</div>
@@ -297,7 +303,7 @@
       </div>
 
       <div class="drawer-body">
-        <section class="form-card">
+        <section class="form-card glass-soft">
           <div class="form-card-title">🧭 Current Week Mode</div>
 
           <label class="field">

@@ -2,6 +2,7 @@ const STORAGE_KEY_V5 = "WEEKWISE_DATA_V5";
 const LEGACY_KEY_V4 = "WEEKWISE_DATA_V4";
 const LEGACY_KEY_V3 = "WEEKWISE_DATA_V3";
 const LEGACY_KEY_V2 = "WEEKWISE_SLOTS_V2";
+const THEME_KEY = "WEEKWISE_THEME";
 
 const DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const DISPLAY_DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
@@ -303,7 +304,6 @@ let activeFilters = [];
 let analyticsOpen = false;
 let commandQuery = "";
 
-/* DOM refs */
 let intro;
 let typeEl;
 
@@ -326,6 +326,9 @@ let analyticsToggleIcon;
 let commandSearch;
 let btnClearSearch;
 let searchSummary;
+
+let btnThemeDark;
+let btnThemeLight;
 
 let overlay;
 let btnClose;
@@ -405,6 +408,9 @@ function initDomRefs(){
   btnClearSearch = document.getElementById("btnClearSearch");
   searchSummary = document.getElementById("searchSummary");
 
+  btnThemeDark = document.getElementById("btnThemeDark");
+  btnThemeLight = document.getElementById("btnThemeLight");
+
   overlay = document.getElementById("modalOverlay");
   btnClose = document.getElementById("btnCloseModal");
   btnCancel = document.getElementById("btnCancel");
@@ -477,6 +483,24 @@ function runTypewriter(){
   tick();
 }
 
+/* Theme */
+function getSavedTheme(){
+  const saved = localStorage.getItem(THEME_KEY);
+  return saved === "light" ? "light" : "dark";
+}
+
+function applyTheme(theme){
+  document.body.setAttribute("data-theme", theme);
+  localStorage.setItem(THEME_KEY, theme);
+  updateThemeToggleUI();
+}
+
+function updateThemeToggleUI(){
+  const current = document.body.getAttribute("data-theme") || "dark";
+  btnThemeDark?.classList.toggle("active", current === "dark");
+  btnThemeLight?.classList.toggle("active", current === "light");
+}
+
 /* Helpers */
 function getTagsArray(){
   return Object.values(appData.tags || {}).sort((a, b) => a.name.localeCompare(b.name));
@@ -525,8 +549,8 @@ function renameOrUpdateTag(tagId, newName, newColor){
 
   if(!cleanName) return { ok:false, message:"Tag name cannot be empty" };
 
-  const duplicate = getTagsArray().find(t =>
-    t.id !== tagId && normalizeTagKey(t.name) === normalizeTagKey(cleanName)
+  const duplicate = getTagsArray().find(
+    t => t.id !== tagId && normalizeTagKey(t.name) === normalizeTagKey(cleanName)
   );
 
   if(duplicate){
@@ -1176,6 +1200,7 @@ function renderDayBreakdown(data){
   dayBreakdown.innerHTML = "";
 
   const maxFilled = Math.max(1, ...DISPLAY_DAYS.map(day => data.dayMap[day].filled));
+  const isDark = (document.body.getAttribute("data-theme") || "dark") === "dark";
 
   DISPLAY_DAYS.forEach(day => {
     const filled = data.dayMap[day].filled;
@@ -1195,7 +1220,7 @@ function renderDayBreakdown(data){
     const fill = document.createElement("div");
     fill.className = "bar-fill";
     fill.style.width = `${(filled / maxFilled) * 100}%`;
-    fill.style.background = "#2563EB";
+    fill.style.background = isDark ? "#7C8CFF" : "#6C7CFA";
 
     bar.appendChild(fill);
 
@@ -1712,6 +1737,7 @@ function render(){
   renderAnalyticsVisibility();
   renderAnalytics();
   renderTimetable();
+  updateThemeToggleUI();
 
   if(btnClearSearch){
     btnClearSearch.classList.toggle("hidden", !commandQuery);
@@ -1749,6 +1775,16 @@ function saveData(){
 
 /* Events */
 function bindEvents(){
+  btnThemeDark?.addEventListener("click", () => {
+    applyTheme("dark");
+    render();
+  });
+
+  btnThemeLight?.addEventListener("click", () => {
+    applyTheme("light");
+    render();
+  });
+
   btnToggleAnalytics?.addEventListener("click", () => {
     analyticsOpen = !analyticsOpen;
     renderAnalyticsVisibility();
@@ -1881,6 +1917,7 @@ function bindEvents(){
 
 /* Boot */
 function boot(){
+  applyTheme(getSavedTheme());
   initDomRefs();
   bindEvents();
   runTypewriter();
