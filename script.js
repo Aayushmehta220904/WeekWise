@@ -299,88 +299,154 @@ function loadData(){
   return v2;
 }
 
-function saveData(){
-  localStorage.setItem(STORAGE_KEY_V5, JSON.stringify(appData));
-}
-
 let appData = loadData();
 let activeFilters = [];
 let analyticsOpen = false;
 
-/* DOM */
-const intro = document.getElementById("intro");
-const typeEl = document.getElementById("typeText");
+/* DOM refs */
+let intro;
+let typeEl;
 
-const timetable = document.getElementById("timetable");
-const tagFilters = document.getElementById("tagFilters");
-const filtersSubText = document.getElementById("filtersSubText");
+let timetable;
+let tagFilters;
+let filtersSubText;
 
-const statsGrid = document.getElementById("statsGrid");
-const tagBreakdown = document.getElementById("tagBreakdown");
-const dayBreakdown = document.getElementById("dayBreakdown");
+let statsGrid;
+let tagBreakdown;
+let dayBreakdown;
 
-const presetSelect = document.getElementById("presetSelect");
-const btnCreatePreset = document.getElementById("btnCreatePreset");
-const presetSubText = document.getElementById("presetSubText");
+let presetSelect;
+let btnCreatePreset;
+let presetSubText;
 
-const btnToggleAnalytics = document.getElementById("btnToggleAnalytics");
-const analyticsPanel = document.getElementById("analyticsPanel");
-const analyticsToggleIcon = document.getElementById("analyticsToggleIcon");
+let btnToggleAnalytics;
+let analyticsPanel;
+let analyticsToggleIcon;
 
-const overlay = document.getElementById("modalOverlay");
-const btnClose = document.getElementById("btnCloseModal");
-const btnCancel = document.getElementById("btnCancel");
-const btnSave = document.getElementById("btnSave");
-const btnDelete = document.getElementById("btnDeleteSlot");
-const btnAddTag = document.getElementById("btnAddTag");
+let overlay;
+let btnClose;
+let btnCancel;
+let btnSave;
+let btnDelete;
+let btnAddTag;
 
-const modalMeta = document.getElementById("modalMeta");
-const titleInput = document.getElementById("slotTitle");
-const notesInput = document.getElementById("slotNotes");
-const slotLockedInput = document.getElementById("slotLocked");
-const availableTagsEl = document.getElementById("availableTags");
-const selectedTagsPreview = document.getElementById("selectedTagsPreview");
-const newTagNameInput = document.getElementById("newTagName");
-const newTagColorInput = document.getElementById("newTagColor");
-const applyScopeSelect = document.getElementById("applyScope");
+let modalMeta;
+let titleInput;
+let notesInput;
+let slotLockedInput;
+let availableTagsEl;
+let selectedTagsPreview;
+let newTagNameInput;
+let newTagColorInput;
+let applyScopeSelect;
 
-const dayManagerOverlay = document.getElementById("dayManagerOverlay");
-const btnCloseDayManager = document.getElementById("btnCloseDayManager");
-const btnCloseDayManager2 = document.getElementById("btnCloseDayManager2");
-const dayManagerMeta = document.getElementById("dayManagerMeta");
-const dayVariantSelect = document.getElementById("dayVariantSelect");
-const btnDuplicateVariant = document.getElementById("btnDuplicateVariant");
-const btnRenameVariant = document.getElementById("btnRenameVariant");
-const btnDeleteVariant = document.getElementById("btnDeleteVariant");
-const copyDayTarget = document.getElementById("copyDayTarget");
-const btnCopyDayNow = document.getElementById("btnCopyDayNow");
+let dayManagerOverlay;
+let btnCloseDayManager;
+let btnCloseDayManager2;
+let dayManagerMeta;
+let dayVariantSelect;
+let btnDuplicateVariant;
+let btnRenameVariant;
+let btnDeleteVariant;
+let copyDayTarget;
+let btnCopyDayNow;
 
-const toolsOverlay = document.getElementById("toolsOverlay");
-const btnOpenTools = document.getElementById("btnOpenTools");
-const btnCloseTools = document.getElementById("btnCloseTools");
-const btnCloseTools2 = document.getElementById("btnCloseTools2");
-const btnOpenTagManagerFromTools = document.getElementById("btnOpenTagManagerFromTools");
-const btnOpenPresetManagerFromTools = document.getElementById("btnOpenPresetManagerFromTools");
+let toolsOverlay;
+let btnOpenTools;
+let btnCloseTools;
+let btnCloseTools2;
+let btnOpenTagManagerFromTools;
+let btnOpenPresetManagerFromTools;
 
-const tagManagerOverlay = document.getElementById("tagManagerOverlay");
-const btnManageTags = document.getElementById("btnOpenTagManagerFromTools");
-const btnCloseTagManager = document.getElementById("btnCloseTagManager");
-const btnCloseTagManager2 = document.getElementById("btnCloseTagManager2");
-const tagManagerList = document.getElementById("tagManagerList");
+let tagManagerOverlay;
+let btnCloseTagManager;
+let btnCloseTagManager2;
+let tagManagerList;
 
-const presetOverlay = document.getElementById("presetOverlay");
-const btnClosePresetModal = document.getElementById("btnClosePresetModal");
-const btnClosePresetModal2 = document.getElementById("btnClosePresetModal2");
-const presetNameInput = document.getElementById("presetNameInput");
-const btnRenamePreset = document.getElementById("btnRenamePreset");
-const btnDeletePreset = document.getElementById("btnDeletePreset");
+let presetOverlay;
+let btnClosePresetModal;
+let btnClosePresetModal2;
+let presetNameInput;
+let btnRenamePreset;
+let btnDeletePreset;
 
-const btnClearAll = document.getElementById("btnClearAll");
+let btnClearAll;
 
 let activeDay = null;
 let activeHour = null;
 let modalSelectedTagIds = [];
 let managedDay = null;
+
+/* DOM init */
+function initDomRefs(){
+  intro = document.getElementById("intro");
+  typeEl = document.getElementById("typeText");
+
+  timetable = document.getElementById("timetable");
+  tagFilters = document.getElementById("tagFilters");
+  filtersSubText = document.getElementById("filtersSubText");
+
+  statsGrid = document.getElementById("statsGrid");
+  tagBreakdown = document.getElementById("tagBreakdown");
+  dayBreakdown = document.getElementById("dayBreakdown");
+
+  presetSelect = document.getElementById("presetSelect");
+  btnCreatePreset = document.getElementById("btnCreatePreset");
+  presetSubText = document.getElementById("presetSubText");
+
+  btnToggleAnalytics = document.getElementById("btnToggleAnalytics");
+  analyticsPanel = document.getElementById("analyticsPanel");
+  analyticsToggleIcon = document.getElementById("analyticsToggleIcon");
+
+  overlay = document.getElementById("modalOverlay");
+  btnClose = document.getElementById("btnCloseModal");
+  btnCancel = document.getElementById("btnCancel");
+  btnSave = document.getElementById("btnSave");
+  btnDelete = document.getElementById("btnDeleteSlot");
+  btnAddTag = document.getElementById("btnAddTag");
+
+  modalMeta = document.getElementById("modalMeta");
+  titleInput = document.getElementById("slotTitle");
+  notesInput = document.getElementById("slotNotes");
+  slotLockedInput = document.getElementById("slotLocked");
+  availableTagsEl = document.getElementById("availableTags");
+  selectedTagsPreview = document.getElementById("selectedTagsPreview");
+  newTagNameInput = document.getElementById("newTagName");
+  newTagColorInput = document.getElementById("newTagColor");
+  applyScopeSelect = document.getElementById("applyScope");
+
+  dayManagerOverlay = document.getElementById("dayManagerOverlay");
+  btnCloseDayManager = document.getElementById("btnCloseDayManager");
+  btnCloseDayManager2 = document.getElementById("btnCloseDayManager2");
+  dayManagerMeta = document.getElementById("dayManagerMeta");
+  dayVariantSelect = document.getElementById("dayVariantSelect");
+  btnDuplicateVariant = document.getElementById("btnDuplicateVariant");
+  btnRenameVariant = document.getElementById("btnRenameVariant");
+  btnDeleteVariant = document.getElementById("btnDeleteVariant");
+  copyDayTarget = document.getElementById("copyDayTarget");
+  btnCopyDayNow = document.getElementById("btnCopyDayNow");
+
+  toolsOverlay = document.getElementById("toolsOverlay");
+  btnOpenTools = document.getElementById("btnOpenTools");
+  btnCloseTools = document.getElementById("btnCloseTools");
+  btnCloseTools2 = document.getElementById("btnCloseTools2");
+  btnOpenTagManagerFromTools = document.getElementById("btnOpenTagManagerFromTools");
+  btnOpenPresetManagerFromTools = document.getElementById("btnOpenPresetManagerFromTools");
+
+  tagManagerOverlay = document.getElementById("tagManagerOverlay");
+  btnCloseTagManager = document.getElementById("btnCloseTagManager");
+  btnCloseTagManager2 = document.getElementById("btnCloseTagManager2");
+  tagManagerList = document.getElementById("tagManagerList");
+
+  presetOverlay = document.getElementById("presetOverlay");
+  btnClosePresetModal = document.getElementById("btnClosePresetModal");
+  btnClosePresetModal2 = document.getElementById("btnClosePresetModal2");
+  presetNameInput = document.getElementById("presetNameInput");
+  btnRenamePreset = document.getElementById("btnRenamePreset");
+  btnDeletePreset = document.getElementById("btnDeletePreset");
+
+  btnClearAll = document.getElementById("btnClearAll");
+}
 
 /* Intro */
 const introText = "Your week. One page. Zero excuses.";
@@ -388,6 +454,9 @@ let t = 0;
 
 function runTypewriter(){
   if(!typeEl) return;
+  typeEl.textContent = "";
+  t = 0;
+
   const tick = () => {
     if(t < introText.length){
       typeEl.textContent += introText.charAt(t);
@@ -401,7 +470,6 @@ function runTypewriter(){
   };
   tick();
 }
-runTypewriter();
 
 /* Tag helpers */
 function getTagsArray(){
@@ -849,6 +917,8 @@ function isVisibleByFilter(slot){
 }
 
 function renderFilters(){
+  if(!tagFilters || !filtersSubText) return;
+
   tagFilters.innerHTML = "";
 
   const allBtn = document.createElement("button");
@@ -887,6 +957,8 @@ function renderFilters(){
 
 /* Preset UI */
 function renderPresetSelect(){
+  if(!presetSelect || !presetSubText) return;
+
   presetSelect.innerHTML = "";
 
   const customOption = document.createElement("option");
@@ -911,6 +983,7 @@ function renderPresetSelect(){
 
 /* Analytics */
 function renderAnalyticsVisibility(){
+  if(!analyticsPanel || !analyticsToggleIcon) return;
   analyticsPanel.classList.toggle("hidden", !analyticsOpen);
   analyticsToggleIcon.textContent = analyticsOpen ? "▲" : "▼";
 }
@@ -994,6 +1067,8 @@ function calculateAnalytics(){
 }
 
 function renderAnalytics(){
+  if(!statsGrid || !tagBreakdown || !dayBreakdown) return;
+
   const data = calculateAnalytics();
 
   statsGrid.innerHTML = "";
@@ -1120,6 +1195,8 @@ function renderDayBreakdown(data){
 
 /* Timetable */
 function renderTimetable(){
+  if(!timetable) return;
+
   timetable.innerHTML = "";
 
   const now = new Date();
@@ -1262,30 +1339,31 @@ function openModal(dayName, hour){
   modalSelectedTagIds = [...data.tagIds];
 
   const variant = getActiveVariant(dayName);
-  modalMeta.textContent = `${dayName} • ${variant.name} • ${hourToLabel(hour)}`;
+  if(modalMeta) modalMeta.textContent = `${dayName} • ${variant.name} • ${hourToLabel(hour)}`;
 
-  titleInput.value = data.title || "";
-  notesInput.value = data.notes || "";
-  slotLockedInput.checked = !!data.locked;
-  newTagNameInput.value = "";
-  applyScopeSelect.value = "this_slot";
+  if(titleInput) titleInput.value = data.title || "";
+  if(notesInput) notesInput.value = data.notes || "";
+  if(slotLockedInput) slotLockedInput.checked = !!data.locked;
+  if(newTagNameInput) newTagNameInput.value = "";
+  if(applyScopeSelect) applyScopeSelect.value = "this_slot";
 
   renderAvailableTags();
   renderSelectedTagsPreview();
-  overlay.classList.remove("hidden");
+  if(overlay) overlay.classList.remove("hidden");
 }
 
 function closeModal(){
-  overlay.classList.add("hidden");
+  if(overlay) overlay.classList.add("hidden");
   activeDay = null;
   activeHour = null;
   modalSelectedTagIds = [];
-  newTagNameInput.value = "";
-  applyScopeSelect.value = "this_slot";
-  slotLockedInput.checked = false;
+  if(newTagNameInput) newTagNameInput.value = "";
+  if(applyScopeSelect) applyScopeSelect.value = "this_slot";
+  if(slotLockedInput) slotLockedInput.checked = false;
 }
 
 function renderAvailableTags(){
+  if(!availableTagsEl) return;
   availableTagsEl.innerHTML = "";
   const tags = getTagsArray();
 
@@ -1323,6 +1401,8 @@ function renderAvailableTags(){
 }
 
 function renderSelectedTagsPreview(){
+  if(!selectedTagsPreview) return;
+
   const tags = getTagObjectsFromIds(modalSelectedTagIds);
 
   if(!tags.length){
@@ -1350,8 +1430,8 @@ function renderSelectedTagsPreview(){
 }
 
 function addTagFromModal(){
-  const name = normalizeTagName(newTagNameInput.value);
-  const color = sanitizeColor(newTagColorInput.value);
+  const name = normalizeTagName(newTagNameInput?.value);
+  const color = sanitizeColor(newTagColorInput?.value);
 
   if(!name) return;
 
@@ -1363,7 +1443,7 @@ function addTagFromModal(){
   }
 
   modalSelectedTagIds = uniqueArray(modalSelectedTagIds);
-  newTagNameInput.value = "";
+  if(newTagNameInput) newTagNameInput.value = "";
 
   renderAvailableTags();
   renderSelectedTagsPreview();
@@ -1374,30 +1454,34 @@ function addTagFromModal(){
 /* Day Manager */
 function openDayManager(dayName){
   managedDay = dayName;
-  dayManagerMeta.textContent = `${dayName} • Current Variant: ${getActiveVariant(dayName).name}`;
+  if(dayManagerMeta) dayManagerMeta.textContent = `${dayName} • Current Variant: ${getActiveVariant(dayName).name}`;
 
-  dayVariantSelect.innerHTML = "";
-  getVariantsArray(dayName).forEach(variant => {
-    const option = document.createElement("option");
-    option.value = variant.id;
-    option.textContent = variant.name;
-    if(variant.id === getActiveVariantId(dayName)) option.selected = true;
-    dayVariantSelect.appendChild(option);
-  });
+  if(dayVariantSelect){
+    dayVariantSelect.innerHTML = "";
+    getVariantsArray(dayName).forEach(variant => {
+      const option = document.createElement("option");
+      option.value = variant.id;
+      option.textContent = variant.name;
+      if(variant.id === getActiveVariantId(dayName)) option.selected = true;
+      dayVariantSelect.appendChild(option);
+    });
+  }
 
-  copyDayTarget.innerHTML = "";
-  DISPLAY_DAYS.filter(d => d !== dayName).forEach(day => {
-    const option = document.createElement("option");
-    option.value = day;
-    option.textContent = day;
-    copyDayTarget.appendChild(option);
-  });
+  if(copyDayTarget){
+    copyDayTarget.innerHTML = "";
+    DISPLAY_DAYS.filter(d => d !== dayName).forEach(day => {
+      const option = document.createElement("option");
+      option.value = day;
+      option.textContent = day;
+      copyDayTarget.appendChild(option);
+    });
+  }
 
-  dayManagerOverlay.classList.remove("hidden");
+  if(dayManagerOverlay) dayManagerOverlay.classList.remove("hidden");
 }
 
 function closeDayManager(){
-  dayManagerOverlay.classList.add("hidden");
+  if(dayManagerOverlay) dayManagerOverlay.classList.add("hidden");
   managedDay = null;
 }
 
@@ -1432,7 +1516,7 @@ function deleteCurrentVariantFromManager(){
 }
 
 function copyDayFromManager(){
-  if(!managedDay) return;
+  if(!managedDay || !copyDayTarget) return;
   const target = copyDayTarget.value;
   if(!target) return;
   copyWholeDayToAnotherDay(managedDay, target);
@@ -1440,18 +1524,19 @@ function copyDayFromManager(){
 }
 
 /* Tools */
-function openTools(){ toolsOverlay.classList.remove("hidden"); }
-function closeTools(){ toolsOverlay.classList.add("hidden"); }
+function openTools(){ if(toolsOverlay) toolsOverlay.classList.remove("hidden"); }
+function closeTools(){ if(toolsOverlay) toolsOverlay.classList.add("hidden"); }
 
 /* Tag manager */
 function openTagManager(){
   renderTagManager();
-  tagManagerOverlay.classList.remove("hidden");
+  if(tagManagerOverlay) tagManagerOverlay.classList.remove("hidden");
 }
 function closeTagManager(){
-  tagManagerOverlay.classList.add("hidden");
+  if(tagManagerOverlay) tagManagerOverlay.classList.add("hidden");
 }
 function renderTagManager(){
+  if(!tagManagerList) return;
   tagManagerList.innerHTML = "";
 
   const tags = getTagsArray();
@@ -1532,12 +1617,12 @@ function renderTagManager(){
 /* Preset manager */
 function openPresetManager(){
   const preset = getActivePreset();
-  presetNameInput.value = preset ? preset.name : "";
-  presetOverlay.classList.remove("hidden");
+  if(presetNameInput) presetNameInput.value = preset ? preset.name : "";
+  if(presetOverlay) presetOverlay.classList.remove("hidden");
 }
 function closePresetManager(){
-  presetOverlay.classList.add("hidden");
-  presetNameInput.value = "";
+  if(presetOverlay) presetOverlay.classList.add("hidden");
+  if(presetNameInput) presetNameInput.value = "";
 }
 function createPresetFromCurrentPrompt(){
   const suggestion = "Exam Week";
@@ -1552,7 +1637,7 @@ function createPresetFromCurrentPrompt(){
   render();
 }
 function renameCurrentPresetFromModal(){
-  const name = normalizeTagName(presetNameInput.value);
+  const name = normalizeTagName(presetNameInput?.value);
   if(!name){
     alert("Enter a week mode name.");
     return;
@@ -1592,128 +1677,170 @@ function render(){
   renderTimetable();
 }
 
-/* Events */
-btnToggleAnalytics?.addEventListener("click", () => {
-  analyticsOpen = !analyticsOpen;
-  renderAnalyticsVisibility();
-});
-
-btnClose?.addEventListener("click", closeModal);
-btnCancel?.addEventListener("click", closeModal);
-overlay?.addEventListener("click", (e) => {
-  if(e.target === overlay) closeModal();
-});
-
-btnAddTag?.addEventListener("click", addTagFromModal);
-newTagNameInput?.addEventListener("keydown", (e) => {
-  if(e.key === "Enter"){
-    e.preventDefault();
-    addTagFromModal();
-  }
-});
-
-btnSave?.addEventListener("click", () => {
-  if(activeDay == null || activeHour == null) return;
-
-  const payload = {
-    title: titleInput.value.trim(),
-    notes: notesInput.value.trim(),
-    tagIds: modalSelectedTagIds,
-    locked: slotLockedInput.checked
-  };
-
-  applySlotPayload(applyScopeSelect.value, payload);
-  closeModal();
-});
-
-btnDelete?.addEventListener("click", () => {
-  if(activeDay == null || activeHour == null) return;
-  deleteSlotByScope(applyScopeSelect.value);
-  closeModal();
-});
-
-/* Day manager events */
-btnCloseDayManager?.addEventListener("click", closeDayManager);
-btnCloseDayManager2?.addEventListener("click", closeDayManager);
-dayManagerOverlay?.addEventListener("click", (e) => {
-  if(e.target === dayManagerOverlay) closeDayManager();
-});
-dayVariantSelect?.addEventListener("change", () => {
-  if(!managedDay) return;
-  switchActiveVariant(managedDay, dayVariantSelect.value, "manual");
-  openDayManager(managedDay);
-});
-btnDuplicateVariant?.addEventListener("click", () => {
-  if(!managedDay) return;
-  duplicateCurrentVariantQuick(managedDay);
-});
-btnRenameVariant?.addEventListener("click", renameCurrentVariantFromManager);
-btnDeleteVariant?.addEventListener("click", deleteCurrentVariantFromManager);
-btnCopyDayNow?.addEventListener("click", copyDayFromManager);
-
-/* Tools events */
-btnOpenTools?.addEventListener("click", openTools);
-btnCloseTools?.addEventListener("click", closeTools);
-btnCloseTools2?.addEventListener("click", closeTools);
-toolsOverlay?.addEventListener("click", (e) => {
-  if(e.target === toolsOverlay) closeTools();
-});
-
-btnOpenTagManagerFromTools?.addEventListener("click", () => {
-  closeTools();
-  openTagManager();
-});
-btnOpenPresetManagerFromTools?.addEventListener("click", () => {
-  closeTools();
-  openPresetManager();
-});
-
-/* Tag manager events */
-btnCloseTagManager?.addEventListener("click", closeTagManager);
-btnCloseTagManager2?.addEventListener("click", closeTagManager);
-tagManagerOverlay?.addEventListener("click", (e) => {
-  if(e.target === tagManagerOverlay) closeTagManager();
-});
-
-/* Preset manager events */
-btnCreatePreset?.addEventListener("click", createPresetFromCurrentPrompt);
-presetSelect?.addEventListener("change", () => {
-  if(presetSelect.value === "__custom__"){
-    appData.activePresetId = null;
-    saveData();
+/* Refresh fix */
+function safeRender(){
+  try{
     render();
-    return;
+  }catch(error){
+    console.error("safeRender failed:", error);
   }
-  applyPreset(presetSelect.value);
-});
-btnClosePresetModal?.addEventListener("click", closePresetManager);
-btnClosePresetModal2?.addEventListener("click", closePresetManager);
-presetOverlay?.addEventListener("click", (e) => {
-  if(e.target === presetOverlay) closePresetManager();
-});
-btnRenamePreset?.addEventListener("click", renameCurrentPresetFromModal);
-btnDeletePreset?.addEventListener("click", deleteCurrentPresetFromModal);
+}
 
-/* Clear all */
-btnClearAll?.addEventListener("click", () => {
-  const ok = confirm("Clear all WeekWise data?");
-  if(!ok) return;
+function ensureTimetableRendered(retries = 5, delay = 120){
+  if(!timetable) return;
 
-  localStorage.removeItem(STORAGE_KEY_V5);
-  localStorage.removeItem(LEGACY_KEY_V4);
-  localStorage.removeItem(LEGACY_KEY_V3);
-  localStorage.removeItem(LEGACY_KEY_V2);
+  const hasChildren = timetable.children.length > 0;
+  if(hasChildren) return;
 
-  appData = normalizeAppData({
-    tags: {},
-    dayVariants: getDefaultVariantsState(),
-    ...getDefaultPresetsState()
+  try{
+    renderTimetable();
+  }catch(error){
+    console.error("renderTimetable retry failed:", error);
+  }
+
+  if(retries > 0){
+    setTimeout(() => ensureTimetableRendered(retries - 1, delay), delay);
+  }
+}
+
+/* Event binding */
+function bindEvents(){
+  btnToggleAnalytics?.addEventListener("click", () => {
+    analyticsOpen = !analyticsOpen;
+    renderAnalyticsVisibility();
   });
-  activeFilters = [];
-  render();
-  closeTools();
-});
+
+  btnClose?.addEventListener("click", closeModal);
+  btnCancel?.addEventListener("click", closeModal);
+  overlay?.addEventListener("click", (e) => {
+    if(e.target === overlay) closeModal();
+  });
+
+  btnAddTag?.addEventListener("click", addTagFromModal);
+  newTagNameInput?.addEventListener("keydown", (e) => {
+    if(e.key === "Enter"){
+      e.preventDefault();
+      addTagFromModal();
+    }
+  });
+
+  btnSave?.addEventListener("click", () => {
+    if(activeDay == null || activeHour == null) return;
+
+    const payload = {
+      title: titleInput?.value.trim() || "",
+      notes: notesInput?.value.trim() || "",
+      tagIds: modalSelectedTagIds,
+      locked: !!slotLockedInput?.checked
+    };
+
+    applySlotPayload(applyScopeSelect?.value || "this_slot", payload);
+    closeModal();
+  });
+
+  btnDelete?.addEventListener("click", () => {
+    if(activeDay == null || activeHour == null) return;
+    deleteSlotByScope(applyScopeSelect?.value || "this_slot");
+    closeModal();
+  });
+
+  btnCloseDayManager?.addEventListener("click", closeDayManager);
+  btnCloseDayManager2?.addEventListener("click", closeDayManager);
+  dayManagerOverlay?.addEventListener("click", (e) => {
+    if(e.target === dayManagerOverlay) closeDayManager();
+  });
+  dayVariantSelect?.addEventListener("change", () => {
+    if(!managedDay) return;
+    switchActiveVariant(managedDay, dayVariantSelect.value, "manual");
+    openDayManager(managedDay);
+  });
+  btnDuplicateVariant?.addEventListener("click", () => {
+    if(!managedDay) return;
+    duplicateCurrentVariantQuick(managedDay);
+  });
+  btnRenameVariant?.addEventListener("click", renameCurrentVariantFromManager);
+  btnDeleteVariant?.addEventListener("click", deleteCurrentVariantFromManager);
+  btnCopyDayNow?.addEventListener("click", copyDayFromManager);
+
+  btnOpenTools?.addEventListener("click", openTools);
+  btnCloseTools?.addEventListener("click", closeTools);
+  btnCloseTools2?.addEventListener("click", closeTools);
+  toolsOverlay?.addEventListener("click", (e) => {
+    if(e.target === toolsOverlay) closeTools();
+  });
+
+  btnOpenTagManagerFromTools?.addEventListener("click", () => {
+    closeTools();
+    openTagManager();
+  });
+  btnOpenPresetManagerFromTools?.addEventListener("click", () => {
+    closeTools();
+    openPresetManager();
+  });
+
+  btnCloseTagManager?.addEventListener("click", closeTagManager);
+  btnCloseTagManager2?.addEventListener("click", closeTagManager);
+  tagManagerOverlay?.addEventListener("click", (e) => {
+    if(e.target === tagManagerOverlay) closeTagManager();
+  });
+
+  btnCreatePreset?.addEventListener("click", createPresetFromCurrentPrompt);
+  presetSelect?.addEventListener("change", () => {
+    if(presetSelect.value === "__custom__"){
+      appData.activePresetId = null;
+      saveData();
+      render();
+      return;
+    }
+    applyPreset(presetSelect.value);
+  });
+  btnClosePresetModal?.addEventListener("click", closePresetManager);
+  btnClosePresetModal2?.addEventListener("click", closePresetManager);
+  presetOverlay?.addEventListener("click", (e) => {
+    if(e.target === presetOverlay) closePresetManager();
+  });
+  btnRenamePreset?.addEventListener("click", renameCurrentPresetFromModal);
+  btnDeletePreset?.addEventListener("click", deleteCurrentPresetFromModal);
+
+  btnClearAll?.addEventListener("click", () => {
+    const ok = confirm("Clear all WeekWise data?");
+    if(!ok) return;
+
+    localStorage.removeItem(STORAGE_KEY_V5);
+    localStorage.removeItem(LEGACY_KEY_V4);
+    localStorage.removeItem(LEGACY_KEY_V3);
+    localStorage.removeItem(LEGACY_KEY_V2);
+
+    appData = normalizeAppData({
+      tags: {},
+      dayVariants: getDefaultVariantsState(),
+      ...getDefaultPresetsState()
+    });
+    activeFilters = [];
+    render();
+    closeTools();
+  });
+}
 
 /* Boot */
-render();
-setInterval(render, 60 * 1000);
+function boot(){
+  initDomRefs();
+  bindEvents();
+  runTypewriter();
+  safeRender();
+  ensureTimetableRendered();
+
+  setTimeout(() => ensureTimetableRendered(4, 150), 100);
+  setTimeout(() => ensureTimetableRendered(3, 200), 350);
+}
+
+if(document.readyState === "loading"){
+  document.addEventListener("DOMContentLoaded", boot, { once: true });
+}else{
+  boot();
+}
+
+setInterval(() => {
+  safeRender();
+  ensureTimetableRendered(1, 80);
+}, 60 * 1000);
